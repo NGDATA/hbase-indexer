@@ -55,7 +55,7 @@ public class TikaSolrDocumentExtractorTest {
         InputSource configInputSource = new InputSource(TikaSolrDocumentExtractorTest.class.getResourceAsStream("/solrconfig.xml"));
         SolrConfig solrConfig = new SolrConfig("example", configInputSource);
         InputSource schemaInputSource = new InputSource(TikaSolrDocumentExtractorTest.class.getResourceAsStream("/schema.xml"));
-        indexSchema = new IndexSchema(solrConfig, null, schemaInputSource);
+        indexSchema = new IndexSchema(solrConfig, "schema.xml", schemaInputSource);
     }
 
     @Test

@@ -66,9 +66,13 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.SystemIdResolver;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
@@ -280,9 +284,16 @@ public class IndexerSupervisor {
         Map<String, String> connParams = indexerDef.getConnectionParams();
         ZooKeeper zk = new ZooKeeper(connParams.get(SolrConnectionParams.ZOOKEEPER), 30000, EmptyWatcher.instance);
         SolrConfigLoader solrConfigLoader = new SolrConfigLoader(connParams.get(SolrConnectionParams.COLLECTION), zk);
-        IndexSchema indexSchema = new IndexSchema(solrConfigLoader.loadSolrConfig(), null, null);
+
+        SolrConfig solrConfig = solrConfigLoader.loadSolrConfig();
+        SolrResourceLoader loader = solrConfig.getResourceLoader();
+        InputSource is = new InputSource(loader.openSchema("schema.xml"));
+          is.setSystemId(SystemIdResolver.createSystemIdFromResourceName("schema.xml"));
+
+        IndexSchema indexSchema = new IndexSchema(solrConfig, "schema.xml", is);
         zk.close();
         return indexSchema;
+
     }
 
     private void restartIndexer(IndexerDefinition indexerDef) {
