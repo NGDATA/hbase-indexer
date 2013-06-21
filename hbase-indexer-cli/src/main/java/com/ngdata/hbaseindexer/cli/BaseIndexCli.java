@@ -60,7 +60,7 @@ public abstract class BaseIndexCli extends BaseCli {
 
         if (!options.has(zkOption)) {
             String message;
-            zkConnectionString = System.getenv(ZK_ENV_VAR);
+            zkConnectionString = System.getProperty(ZK_ENV_VAR);
             if (zkConnectionString != null) {
                 message = "Using ZooKeeper connection string specified in " + ZK_ENV_VAR + ": " + zkConnectionString;
             } else {

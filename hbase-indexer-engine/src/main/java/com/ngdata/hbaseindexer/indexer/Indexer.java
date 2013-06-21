@@ -134,8 +134,8 @@ public abstract class Indexer implements EventListener {
         try {
 
             incomingEventsMeter.mark(events.size());
-            SolrUpdateCollector updateCollector = new SolrUpdateCollector(events.size());
             events = Lists.newArrayList(Iterables.filter(events, tableEqualityPredicate));
+            SolrUpdateCollector updateCollector = new SolrUpdateCollector(events.size());
             applicableEventsMeter.mark(events.size());
 
             calculateIndexUpdates(events, updateCollector);
