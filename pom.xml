@@ -29,6 +29,7 @@
     <version.zookeeper>3.4.5-cdh4.2.0</version.zookeeper>
     <version.jackson>1.9.2</version.jackson>
     <version.httpclient>4.2.3</version.httpclient>
+    <version.cdk>0.4.1</version.cdk>
 
     <!-- Tells maven plugins what file encoding to use -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -121,6 +122,66 @@
         <groupId>com.ngdata</groupId>
         <artifactId>hbase-sep-tools</artifactId>
         <version>${project.version}</version>
+      </dependency>
+     <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-solr-cell</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-core</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-avro</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-json</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-tika-core</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-tika-decompress</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-solr-core</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-twitter</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-hadoop-sequencefile</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-core</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-solr-core</artifactId>
+        <version>${version.cdk}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>

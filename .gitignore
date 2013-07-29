@@ -4,3 +4,24 @@
 *.jar
 *.war
 *.ear
+
+.DS_Store
+
+# building
+target
+build
+test-output
+.surefire-*
+
+# Eclipse
+.classpath
+.project
+.settings
+*.jpage
+
+# IDEA
+*.iml
+*.ipr
+*.iws
+.idea/*
+
