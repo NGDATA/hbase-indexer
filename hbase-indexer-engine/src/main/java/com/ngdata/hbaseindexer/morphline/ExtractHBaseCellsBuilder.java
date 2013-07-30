@@ -110,7 +110,7 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
     // also see ByteArrayExtractors
     public Mapping(Config config, MorphlineContext context) {
       Configs configs = new Configs();
-      this.inputColumn = configs.getString(config, "inputColumn");
+      this.inputColumn = resolveColumnName(configs.getString(config, "inputColumn"));
       this.columnFamily = Bytes.toBytes(splitFamilyAndQualifier(inputColumn)[0]); 
       String qualifierString = splitFamilyAndQualifier(inputColumn)[1];
       this.isWildCard = qualifierString.endsWith("*");
@@ -154,6 +154,14 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
       }
 
       configs.validateArguments(config);
+    }
+    
+    /**
+     * Override for custom name resolution, if desired. For example you could override this to
+     * translate human readable names to Kiji-encoded names.
+     */
+    protected String resolveColumnName(String inputColumn) {
+      return inputColumn;
     }
     
     public void apply(Result result, Record record) {
