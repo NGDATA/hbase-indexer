@@ -76,10 +76,18 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
     protected boolean doProcess(Record record) {
       Result result = (Result) record.getFirstValue(Fields.ATTACHMENT_BODY);
       Preconditions.checkNotNull(result);
+      removeAttachments(record);
       for (Mapping mapping : mappings) {
         mapping.apply(result, record);
       }
       return super.doProcess(record);
+    }
+    
+    private void removeAttachments(Record outputRecord) {
+      outputRecord.removeAll(Fields.ATTACHMENT_BODY);
+      outputRecord.removeAll(Fields.ATTACHMENT_MIME_TYPE);
+      outputRecord.removeAll(Fields.ATTACHMENT_CHARSET);
+      outputRecord.removeAll(Fields.ATTACHMENT_NAME);
     }
     
   }
