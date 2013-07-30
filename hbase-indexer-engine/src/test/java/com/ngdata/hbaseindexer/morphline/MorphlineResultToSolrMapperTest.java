@@ -62,7 +62,7 @@ public class MorphlineResultToSolrMapperTest {
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
         Result result = new Result(Lists.newArrayList(kvA, kvB));
 
-        Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "fieldB", "dummy value", Fields.ATTACHMENT_MIME_TYPE, MorphlineResultToSolrMapper.OUTPUT_MIME_TYPE);
+        Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "fieldB", "dummy value");
 
         SolrInputDocument solrDocument = resultMapper.map(result);
         solrDocument.removeField(Fields.ATTACHMENT_BODY);
