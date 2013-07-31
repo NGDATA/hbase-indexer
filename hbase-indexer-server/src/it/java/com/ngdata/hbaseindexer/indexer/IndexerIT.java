@@ -35,6 +35,7 @@ import com.ngdata.hbaseindexer.model.api.IndexerDefinition.IncrementalIndexingSt
 import com.ngdata.hbaseindexer.model.api.IndexerDefinitionBuilder;
 import com.ngdata.hbaseindexer.model.api.IndexerNotFoundException;
 import com.ngdata.hbaseindexer.model.api.WriteableIndexerModel;
+import com.ngdata.hbaseindexer.morphline.MorphlineResultToSolrMapper;
 import com.ngdata.hbaseindexer.util.net.NetUtils;
 import com.ngdata.hbaseindexer.util.solr.SolrTestingUtility;
 import com.ngdata.sep.impl.SepReplicationSource;
@@ -619,6 +620,37 @@ public class IndexerIT {
         assertEquals(6, doc.getFieldValues("field3_ss").size());
         assertTrue(doc.getFieldValues("field3_ss").contains("orange"));
         assertTrue(doc.getFieldValues("field3_ss").contains("default1"));
+
+        table.close();
+    }
+
+    @Test
+    public void testMorphline() throws Exception {
+        createTable("table1", "family1");
+
+        HTable table = new HTable(conf, "table1");
+
+        StringBuilder indexerConf = new StringBuilder();
+        indexerConf.append("<indexer table='table1' mapper='" + MorphlineResultToSolrMapper.class.getName() + "'>");
+        indexerConf.append("  <param name='morphlineFile'" +
+        		" value='../hbase-indexer-engine/src/test/resources/test-morphlines/extractHBaseCell.conf'/>");
+        indexerConf.append("</indexer>");
+
+        createIndexer1(indexerConf.toString());
+
+        SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
+
+        Put put = new Put(Bytes.toBytes("cry baby"));
+        put.add(b("family1"), b("field1"), Bytes.toBytes(4279));
+        table.put(put);
+
+        SepTestUtil.waitOnReplication(conf, 60000L);
+
+        collection1.commit();
+        QueryResponse response = collection1.query(new SolrQuery("*:*"));
+        assertEquals(1, response.getResults().size());
+        SolrDocument doc = response.getResults().get(0);
+        assertEquals("4279", doc.getFirstValue("field1_s"));
 
         table.close();
     }
