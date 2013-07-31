@@ -15,40 +15,19 @@
  */
 package com.ngdata.hbaseindexer.morphline;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableSet;
-import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import com.cloudera.cdk.morphline.api.Command;
-import com.cloudera.cdk.morphline.api.MorphlineCompilationException;
-import com.cloudera.cdk.morphline.api.Record;
-import com.cloudera.cdk.morphline.base.Compiler;
-import com.cloudera.cdk.morphline.base.FaultTolerance;
-import com.cloudera.cdk.morphline.base.Fields;
-import com.cloudera.cdk.morphline.base.Notifications;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.ngdata.hbaseindexer.Configurable;
-import com.ngdata.hbaseindexer.parse.ByteArrayExtractor;
 import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 
 /**
  * Pipes a given HBase Result into a morphline and extracts and transforms the specified HBase cells
@@ -87,22 +66,21 @@ import com.typesafe.config.ConfigFactory;
  * </indexer>
  * </pre>
  */
-public class MorphlineResultToSolrMapper implements ResultToSolrMapper, Configurable {
+public final class MorphlineResultToSolrMapper implements ResultToSolrMapper, Configurable {
     
-  // TODO: verify SEP does not call the *same* MorphlineResultToSolrMapper instance from multiple
-  // threads at the same time
-  private HBaseMorphlineContext morphlineContext;
-  private Command morphline;
-  private String morphlineFileAndId;
-  private Timer mappingTimer;
-  private final Collector collector = new Collector();
-  private boolean isSafeMode = false; // safe but slow (debug-only)
-
-  /**
-   * Information to be used for constructing a Get to fetch data required for indexing.
-   */
-  private Map<byte[], NavigableSet<byte[]>> familyMap;
+  private Map<String, String> params;
+  private final Object lock = new Object();
   
+  /*
+   * TODO: Looks like SEP calls the *same* MorphlineResultToSolrMapper instance from multiple
+   * threads at the same time. This would cause race conditions. It would be more efficient,
+   * scalable and simple for SEP to instantiate a separate ResultToSolrMapper instance per thread on
+   * program startup (and have one or two threads per CPU core), and have each thread reuse it's own
+   * local ResultToSolrMapper many times. For now we use a crude lower-level pooling work-around
+   * below.
+   */
+  private final BlockingQueue<LocalMorphlineResultToSolrMapper> pool = new LinkedBlockingQueue();
+
   public static final String MORPHLINE_FILE_PARAM = "morphlineFile";
   public static final String MORPHLINE_ID_PARAM = "morphlineId";
 
@@ -113,191 +91,72 @@ public class MorphlineResultToSolrMapper implements ResultToSolrMapper, Configur
   public static final String MORPHLINE_VARIABLE_PARAM = "morphlineVariable";
 
   public static final String OUTPUT_MIME_TYPE = "application/java-hbase-result";
-
-  private static final Logger LOG = LoggerFactory.getLogger(MorphlineResultToSolrMapper.class);
-  
   
   public MorphlineResultToSolrMapper() {}
   
   @Override
   public void configure(Map<String, String> params) {
-    if (LOG.isTraceEnabled()) {
-      LOG.trace("CWD is {}", new File(".").getAbsolutePath());
-      LOG.trace("Configuration:\n{}", Joiner.on("\n").join(new TreeMap(params).entrySet()));
+    Preconditions.checkNotNull(params);
+    this.params = params;
+    returnToPool(borrowFromPool()); // fail fast on morphline compilation exception
+  }
+  
+  private LocalMorphlineResultToSolrMapper borrowFromPool() {
+    LocalMorphlineResultToSolrMapper mapper = pool.poll();
+    if (mapper == null) {
+      mapper = createMapper();
     }
-    
-    FaultTolerance faultTolerance = new FaultTolerance(
-      getBooleanParameter(FaultTolerance.IS_PRODUCTION_MODE, false, params), 
-      getBooleanParameter(FaultTolerance.IS_IGNORING_RECOVERABLE_EXCEPTIONS, false, params),
-      getStringParameter(FaultTolerance.RECOVERABLE_EXCEPTION_CLASSES, SolrServerException.class.getName(), params)        
-      );
-    
-    this.morphlineContext = (HBaseMorphlineContext) new HBaseMorphlineContext.Builder()
-      .setExceptionHandler(faultTolerance)
-      .setMetricRegistry(new MetricRegistry())
-      .build();
+    return mapper;
+  }
 
-    String morphlineFile = params.get(MORPHLINE_FILE_PARAM);
-    String morphlineId = params.get(MORPHLINE_ID_PARAM);
-    if (morphlineFile == null || morphlineFile.trim().length() == 0) {
-      throw new MorphlineCompilationException("Missing parameter: " + MORPHLINE_FILE_PARAM, null);
+  private LocalMorphlineResultToSolrMapper createMapper() {
+    LocalMorphlineResultToSolrMapper mapper = new LocalMorphlineResultToSolrMapper();
+    Map<String, String> localParams;
+    synchronized (lock) {
+      localParams = new HashMap(params);
     }
-    Map morphlineVariables = new HashMap();
-    for (Map.Entry<String, String> entry : params.entrySet()) {
-      String variablePrefix = MORPHLINE_VARIABLE_PARAM + ".";
-      if (entry.getKey().startsWith(variablePrefix)) {
-        morphlineVariables.put(entry.getKey().substring(variablePrefix.length()), entry.getValue());
-      }
-    }
-    Config override = ConfigFactory.parseMap(morphlineVariables);
-    this.morphline = new Compiler().compile(new File(morphlineFile), morphlineId, morphlineContext, collector, override);
-    this.morphlineFileAndId = morphlineFile + "@" + morphlineId;
+    mapper.configure(localParams);
+    return mapper;
+  }
 
-    // precompute familyMap; see DefaultResultToSolrMapper ctor
-    Get get = new Get();
-    for (ByteArrayExtractor extractor : morphlineContext.getExtractors()) {
-      byte[] columnFamily = extractor.getColumnFamily();
-      byte[] columnQualifier = extractor.getColumnQualifier();
-      if (columnFamily != null) {
-        if (columnQualifier != null) {
-          get.addColumn(columnFamily, columnQualifier);
-        } else {
-          get.addFamily(columnFamily);
-        }
-      }
+  private void returnToPool(LocalMorphlineResultToSolrMapper mapper) {
+    try {
+      pool.put(mapper);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
     }
-    this.familyMap = get.getFamilyMap();
-    
-    this.isSafeMode = getBooleanParameter("isSafeMode", false, params); // intentionally undocumented, not a public API
-    
-    String metricName = MetricRegistry.name(getClass(), "HBase Result to Solr mapping time");
-    this.mappingTimer = morphlineContext.getMetricRegistry().timer(metricName);
-    Notifications.notifyBeginTransaction(morphline);      
   }
   
   @Override
   public boolean containsRequiredData(Result result) {
-    if (isSafeMode) { return false; }
-    for (ByteArrayExtractor extractor : morphlineContext.getExtractors()) {
-      if (!extractor.containsTarget(result)) {
-        return false;
-      }
-    }
-    return true;
+    LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
+    boolean returnValue = mapper.containsRequiredData(result);
+    returnToPool(mapper);
+    return returnValue;
   }
 
   @Override
   public boolean isRelevantKV(KeyValue kv) {
-    if (isSafeMode) { return true; }
-    for (ByteArrayExtractor extractor : morphlineContext.getExtractors()) {
-      if (extractor.isApplicable(kv)) {
-        return true;
-      }
-    }
-    return false;
+    LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
+    boolean returnValue = mapper.isRelevantKV(kv);
+    returnToPool(mapper);
+    return returnValue;
   }
 
   @Override
   public Get getGet(byte[] row) {
-    Get get = new Get(row);
-    if (isSafeMode) { return get; }
-    for (Entry<byte[], NavigableSet<byte[]>> familyMapEntry : familyMap.entrySet()) { 
-      // see DefaultResultToSolrMapper
-      byte[] columnFamily = familyMapEntry.getKey();
-      if (familyMapEntry.getValue() == null) {
-        get.addFamily(columnFamily);
-      } else {
-        for (byte[] qualifier : familyMapEntry.getValue()) {
-          get.addColumn(columnFamily, qualifier);
-        }
-      }
-    }
-    return get;
+    LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
+    Get returnValue = mapper.getGet(row);
+    returnToPool(mapper);
+    return returnValue;
   }
 
   @Override
   public SolrInputDocument map(Result result) {
-    Timer.Context timerContext = mappingTimer.time();
-    try {
-      Record record = new Record();
-      record.put(Fields.ATTACHMENT_BODY, result);
-      record.put(Fields.ATTACHMENT_MIME_TYPE, OUTPUT_MIME_TYPE);
-      collector.reset();
-      try {
-        Notifications.notifyStartSession(morphline);
-        if (!morphline.process(record)) {
-          LOG.warn("Morphline {} failed to process record: {}", morphlineFileAndId, record);
-        }
-      } catch (RuntimeException t) {
-        morphlineContext.getExceptionHandler().handleException(t, record);
-      }
-      
-      List<Record> results = collector.getRecords();
-      if (results.size() == 0) {
-        return null;
-      }
-      if (results.size() > 1) {
-        throw new IllegalStateException(getClass().getName() + 
-          " must not generate more than one output record per input HBase Result event");
-      }
-      SolrInputDocument solrInputDocument = convert(results.get(0));    
-      return solrInputDocument;
-    } finally {
-      timerContext.stop();
-    }
-  }
-
-  private SolrInputDocument convert(Record record) {
-    Map<String, Collection<Object>> map = record.getFields().asMap();
-    SolrInputDocument doc = new SolrInputDocument(new HashMap(2 * map.size()));
-    for (Map.Entry<String, Collection<Object>> entry : map.entrySet()) {
-      doc.setField(entry.getKey(), entry.getValue());
-    }
-    return doc;
-  }
-  
-  private boolean getBooleanParameter(String name, boolean defaultValue, Map<String, String> map) {
-    String value = map.get(name);
-    return value == null ? defaultValue : "TRUE".equalsIgnoreCase(value);
-  }
-
-  private String getStringParameter(String name, String defaultValue, Map<String, String> map) {
-    String value = map.get(name);
-    return value == null ? defaultValue : value;
-  }
-
-
-  ///////////////////////////////////////////////////////////////////////////////
-  // Nested classes:
-  ///////////////////////////////////////////////////////////////////////////////
-  private static final class Collector implements Command {
-    
-    private final List<Record> results = new ArrayList();
-    
-    public List<Record> getRecords() {
-      return results;
-    }
-    
-    public void reset() {
-      results.clear();
-    }
-
-    @Override
-    public Command getParent() {
-      return null;
-    } 
-    
-    @Override
-    public void notify(Record notification) {
-    }
-
-    @Override
-    public boolean process(Record record) {
-      Preconditions.checkNotNull(record);
-      results.add(record);
-      return true;
-    }
-    
+    LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
+    SolrInputDocument returnValue = mapper.map(result);
+    returnToPool(mapper);
+    return returnValue;
   }
 
 }
