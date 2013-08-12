@@ -18,8 +18,9 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ngdata</groupId>
-  <artifactId>hbase-sep-impl-common</artifactId>
-  <name>HBase Side-Effect Processor: impl</name>
+  <artifactId>hbase-sep-impl</artifactId>
+  <version>1.2-hbase0.95-SNAPSHOT</version>
+  <name>HBase Side-Effect Processor: impl for HBase 0.95</name>
 
   <parent>
     <groupId>com.ngdata</groupId>
@@ -44,24 +45,33 @@
   <dependencies>
     <dependency>
       <groupId>com.ngdata</groupId>
+      <artifactId>hbase-sep-impl-common</artifactId>
+      <version>1.2-SNAPSHOT</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.ngdata</groupId>
       <artifactId>hbase-sep-api</artifactId>
+      <version>1.2-SNAPSHOT</version>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-common</artifactId>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-server</artifactId>
     </dependency>
 
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-client</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-minicluster</artifactId>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-common</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
   </dependencies>
-
-
 </project>

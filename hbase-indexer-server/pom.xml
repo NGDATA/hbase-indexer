@@ -35,6 +35,10 @@
       <artifactId>hbase-indexer-engine</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.ngdata</groupId>
+      <artifactId>hbase-indexer-morphlines</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-core</artifactId>
       <version>${version.hadoop.mr1}</version>
@@ -58,12 +62,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>

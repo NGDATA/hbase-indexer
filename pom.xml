@@ -22,13 +22,14 @@
     <version.solr>4.3.1</version.solr>
     <version.guava>11.0.2</version.guava>
     <version.slf4j>1.7.2</version.slf4j>
-    <version.hbase>0.94.2-cdh4.2.0</version.hbase>
+    <version.hbase94>0.94.2-cdh4.2.0</version.hbase94>
+    <version.hbase95>0.95.1-cdh5.0.0-SNAPSHOT</version.hbase95>
     <version.hadoop.mr1>2.0.0-mr1-cdh4.2.0</version.hadoop.mr1>
-    <version.hbase>0.94.2-cdh4.2.0</version.hbase>
     <version.hadoop>2.0.0-cdh4.2.0</version.hadoop>
     <version.zookeeper>3.4.5-cdh4.2.0</version.zookeeper>
     <version.jackson>1.9.2</version.jackson>
     <version.httpclient>4.2.3</version.httpclient>
+    <version.cdk>0.5.0</version.cdk>
 
     <!-- Tells maven plugins what file encoding to use -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -65,6 +66,7 @@
     <module>hbase-indexer-cli</module>
     <module>hbase-indexer-all</module>
     <module>hbase-indexer-engine</module>
+    <module>hbase-indexer-morphlines</module>
     <module>hbase-indexer-demo</module>
     <module>hbase-sep</module>
     <module>hbase-indexer-dist</module>
@@ -80,6 +82,11 @@
       <dependency>
         <groupId>com.ngdata</groupId>
         <artifactId>hbase-indexer-engine</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.ngdata</groupId>
+        <artifactId>hbase-indexer-morphlines</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -114,13 +121,63 @@
       </dependency>
       <dependency>
         <groupId>com.ngdata</groupId>
-        <artifactId>hbase-sep-impl</artifactId>
+        <artifactId>hbase-sep-impl-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>com.ngdata</groupId>
         <artifactId>hbase-sep-tools</artifactId>
         <version>${project.version}</version>
+      </dependency>
+     <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-solr-cell</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-avro</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-json</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-tika-core</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-tika-decompress</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-solr-core</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-twitter</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-hadoop-sequencefile</artifactId>
+        <version>${version.cdk}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.cloudera.cdk</groupId>
+        <artifactId>cdk-morphlines-core</artifactId>
+        <version>${version.cdk}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.solr</groupId>
@@ -141,6 +198,21 @@
           <exclusion>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.solr</groupId>
+        <artifactId>solr-cell</artifactId>
+        <version>${version.solr}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>xerces</groupId>
+            <artifactId>xercesImpl</artifactId> <!-- used by ExtractingDocumentLoader but we never call it -->
+          </exclusion>
+          <exclusion>
+            <groupId>com.ibm.icu</groupId>
+            <artifactId>icu4j</artifactId> <!-- nothing in solr-cell is using this -->
           </exclusion>
         </exclusions>
       </dependency>
@@ -199,14 +271,33 @@
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase</artifactId>
-        <version>${version.hbase}</version>
+        <version>${version.hbase94}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase</artifactId>
         <type>test-jar</type>
         <scope>test</scope>
-        <version>${version.hbase}</version>
+        <version>${version.hbase94}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-server</artifactId>
+        <version>${version.hbase95}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-common</artifactId>
+        <type>test-jar</type>
+        <scope>test</scope>
+        <version>${version.hbase95}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-client</artifactId>
+        <type>test-jar</type>
+        <scope>test</scope>
+        <version>${version.hbase95}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.hadoop</groupId>
@@ -268,6 +359,82 @@
     </dependencies>
   </dependencyManagement>
 
+  <profiles>
+    <profile>
+      <id>0.94</id>
+      <activation>
+        <property>
+          <name>!hbase.api</name>
+        </property>
+      </activation>
+
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-sep-impl</artifactId>
+            <version>1.2-hbase0.94-SNAPSHOT</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase</artifactId>
+        </dependency>
+
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase</artifactId>
+          <type>test-jar</type>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>0.95</id>
+      <activation>
+        <property>
+          <name>hbase.api</name>
+          <value>0.95</value>
+        </property>
+      </activation>
+
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>com.ngdata</groupId>
+            <artifactId>hbase-sep-impl</artifactId>
+            <version>1.2-hbase0.95-SNAPSHOT</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-server</artifactId>
+        </dependency>
+
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-client</artifactId>
+          <type>test-jar</type>
+          <scope>test</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-common</artifactId>
+          <type>test-jar</type>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>  
+    </profile>
+  </profiles>
+
   <repositories>
     <repository>
       <id>lilyproject.snapshot</id>
@@ -296,9 +463,9 @@
       <id>cdh.repo</id>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
       <name>Cloudera Repository</name>
-      <snapshots>
+      <!-- snapshots>
         <enabled>false</enabled>
-      </snapshots>
+      </snapshots -->
     </repository>
   </repositories>
 
@@ -387,6 +554,12 @@
                 <goal>jar-no-fork</goal>
               </goals>
             </execution>
+            <execution>
+              <id>attach-sources-to-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+            </execution>
           </executions>
         </plugin>
         <plugin>
@@ -395,17 +568,6 @@
             <source>1.6</source>
             <target>1.6</target>
           </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-source-plugin</artifactId>
-          <executions>
-            <execution>
-              <id>attach-sources</id>
-              <goals>
-                <goal>jar</goal>
-              </goals>
-            </execution>
-          </executions>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

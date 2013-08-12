@@ -30,6 +30,8 @@
   <modules>
     <module>hbase-sep-api</module>
     <module>hbase-sep-impl</module>
+    <module>hbase-sep-impl-0.94</module>
+    <module>hbase-sep-impl-0.95</module>
     <module>hbase-sep-demo</module>
     <module>hbase-sep-tools</module>
   </modules>

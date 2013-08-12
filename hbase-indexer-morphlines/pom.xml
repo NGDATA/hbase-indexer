@@ -19,8 +19,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>hbase-indexer-engine</artifactId>
-  <name>HBase Indexer: engine (mapper/indexer/...)</name>
+  <artifactId>hbase-indexer-morphlines</artifactId>
+  <name>HBase Indexer: morphline record mapper</name>
 
   <parent>
     <groupId>com.ngdata</groupId>
@@ -32,11 +32,39 @@
   <dependencies>
     <dependency>
       <groupId>com.ngdata</groupId>
-      <artifactId>hbase-indexer-common</artifactId>
+      <artifactId>hbase-indexer-engine</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.ngdata</groupId>
-      <artifactId>hbase-indexer-model</artifactId>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-solr-cell</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-twitter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-avro</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-json</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-tika-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-tika-decompress</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.cloudera.cdk</groupId>
+      <artifactId>cdk-morphlines-hadoop-sequencefile</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>

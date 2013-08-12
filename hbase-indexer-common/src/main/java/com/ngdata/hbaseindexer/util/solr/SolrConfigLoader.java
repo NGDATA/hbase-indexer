@@ -22,8 +22,6 @@ import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
 
-import org.apache.hadoop.hbase.EmptyWatcher;
-
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
