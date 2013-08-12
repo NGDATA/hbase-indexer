@@ -39,6 +39,10 @@
       <artifactId>hbase-indexer-engine</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.ngdata</groupId>
+      <artifactId>hbase-indexer-morphlines</artifactId>
+    </dependency>
+    <dependency>
       <groupId>net.sf.jopt-simple</groupId>
       <artifactId>jopt-simple</artifactId>
     </dependency>
