@@ -18,13 +18,16 @@ package com.ngdata.hbaseindexer.morphline;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NavigableMap;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import com.cloudera.cdk.morphline.api.Command;
 import com.cloudera.cdk.morphline.api.CommandBuilder;
+import com.cloudera.cdk.morphline.api.MorphlineCompilationException;
 import com.cloudera.cdk.morphline.api.MorphlineContext;
 import com.cloudera.cdk.morphline.api.Record;
 import com.cloudera.cdk.morphline.base.AbstractCommand;
@@ -79,6 +82,7 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
             for (Mapping mapping : mappings) {
                 mapping.apply(result, record);
             }
+            // pass record to next command in chain:      
             return super.doProcess(record);
         }
 
@@ -101,6 +105,8 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
         private final byte[] qualifier;
         private final boolean isWildCard;
         private final String outputFieldName;
+        private final List<String> outputFieldNames;
+        private final boolean isDynamicOutputFieldName;
         private final ByteArrayExtractor extractor;
         private final String type;
         private final ByteArrayValueMapper byteArrayMapper;
@@ -110,13 +116,34 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
             Configs configs = new Configs();
             this.inputColumn = resolveColumnName(configs.getString(config, "inputColumn"));
             this.columnFamily = Bytes.toBytes(splitFamilyAndQualifier(inputColumn)[0]);
+            
             String qualifierString = splitFamilyAndQualifier(inputColumn)[1];
             this.isWildCard = qualifierString.endsWith("*");
             if (isWildCard) {
                 qualifierString = qualifierString.substring(0, qualifierString.length() - 1);
             }
             this.qualifier = Bytes.toBytes(qualifierString);
-            this.outputFieldName = configs.getString(config, "outputField");
+            
+            String outputField = configs.getString(config, "outputField", null);
+            this.outputFieldNames = configs.getStringList(config, "outputFields", null);
+            if (outputField == null && outputFieldNames == null) {
+              throw new MorphlineCompilationException("Either outputField or outputFields must be defined", config);
+            }
+            if (outputField != null && outputFieldNames != null) {
+              throw new MorphlineCompilationException("Must not define both outputField and outputFields at the same time", config);
+            }
+            if (outputField == null) {
+              this.isDynamicOutputFieldName = false;
+              this.outputFieldName = null;
+            } else {
+              this.isDynamicOutputFieldName = outputField.endsWith("*");
+              if (isDynamicOutputFieldName) {
+                  this.outputFieldName = outputField.substring(0, outputField.length() - 1);
+              } else {
+                  this.outputFieldName = outputField;
+              }
+            }
+            
             this.type = configs.getString(config, "type", "byte[]");
             if (type.equals("byte[]")) { // pass through byte[] to downstream morphline commands without conversion
                 this.byteArrayMapper = new ByteArrayValueMapper() {
@@ -146,11 +173,11 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
                     throw new IllegalArgumentException("Can't create a non-prefix-based qualifier extractor");
                 }
             }
+            
+            configs.validateArguments(config);
             if (context instanceof HBaseMorphlineContext) {
                 ((HBaseMorphlineContext)context).getExtractors().add(this.extractor);
             }
-
-            configs.validateArguments(config);
         }
 
         /**
@@ -162,13 +189,56 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
         }
 
         public void apply(Result result, Record record) {
-            for (byte[] bytes : extractor.extract(result)) {
-                for (Object value : byteArrayMapper.map(bytes)) {
+            if (outputFieldNames != null) {
+                extractWithMultipleOutputFieldNames(result, record);
+            } else if (isDynamicOutputFieldName && isWildCard) {
+                extractWithDynamicOutputFieldNames(result, record);
+            } else {
+                extractWithSingleOutputField(result, record);
+            }
+        }
+
+        private void extractWithSingleOutputField(Result result, Record record) {
+            Iterator<byte[]> iter = extractor.extract(result).iterator();
+            while (iter.hasNext()) {
+                for (Object value : byteArrayMapper.map(iter.next())) {
                     record.put(outputFieldName, value);
                 }
             }
         }
-
+      
+        private void extractWithMultipleOutputFieldNames(Result result, Record record) {
+            Iterator<byte[]> iter = extractor.extract(result).iterator();
+            for (int i = 0; i < outputFieldNames.size() && iter.hasNext(); i++) {
+                byte[] input = iter.next();
+                String outputField = outputFieldNames.get(i);
+                if (outputField.length() > 0) { // empty column name indicates omit this field on output
+                    for (Object value : byteArrayMapper.map(input)) {
+                        record.put(outputField, value);
+                    }
+                }
+            }              
+        }
+        
+        private void extractWithDynamicOutputFieldNames(Result result, Record record) {
+          Iterator<byte[]> iter = extractor.extract(result).iterator();
+          NavigableMap<byte[], byte[]> qualifiersToValues = result.getFamilyMap(columnFamily);
+          if (qualifiersToValues != null) {
+              for (byte[] matchingQualifier : qualifiersToValues.navigableKeySet().tailSet(qualifier)) {
+                  if (Bytes.startsWith(matchingQualifier, qualifier)) {
+                      byte[] tail = Bytes.tail(matchingQualifier, matchingQualifier.length - qualifier.length);
+                      String outputField = outputFieldName + Bytes.toString(tail);                        
+                      for (Object value : byteArrayMapper.map(iter.next())) {
+                          record.put(outputField, value);
+                      }
+                  } else {
+                      break;
+                  }
+              }
+              assert !iter.hasNext();
+          }
+        }
+      
         private static String[] splitFamilyAndQualifier(String fieldValueExpression) {
             String[] splits = fieldValueExpression.split(":", 2);
             if (splits.length != 2) {

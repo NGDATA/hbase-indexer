@@ -49,6 +49,7 @@ public class MorphlineResultToSolrMapperTest {
     private static final byte[] COLUMN_FAMILY_B = Bytes.toBytes("cfB");
     private static final byte[] QUALIFIER_A = Bytes.toBytes("qualifierA");
     private static final byte[] QUALIFIER_B = Bytes.toBytes("qualifierB");
+    private static final byte[] QUALIFIER_C = Bytes.toBytes("qualifierC");
     
     @Test
     public void testMap() throws Exception {
@@ -62,6 +63,43 @@ public class MorphlineResultToSolrMapperTest {
         Result result = new Result(Lists.newArrayList(kvA, kvB));
 
         Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "fieldB", "dummy value");
+
+        SolrInputDocument solrDocument = resultMapper.map(result);
+        assertEquals(expectedMap, toRecord(solrDocument).getFields());
+    }
+
+    @Test
+    public void testMapWithMultipleOutputFields() throws Exception {
+        MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();
+        resultMapper.configure(ImmutableMap.of(
+            MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCellsWithMultipleOutputFields.conf")
+            );
+
+        KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
+        KeyValue kvX = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_A, "Basti".getBytes("UTF-8"));
+        KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
+        KeyValue kvC = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_C, "Nadja".getBytes("UTF-8"));
+        Result result = new Result(Lists.newArrayList(kvA, kvX, kvB, kvC));
+
+        Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "fieldB", "Basti", "fieldC", "Nadja");
+
+        SolrInputDocument solrDocument = resultMapper.map(result);
+        assertEquals(expectedMap, toRecord(solrDocument).getFields());
+    }
+
+    @Test
+    public void testMapWithDynamicOutputField() throws Exception {
+        MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();
+        resultMapper.configure(ImmutableMap.of(
+            MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCellsWithDynamicOutputField.conf")
+            );
+
+        KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
+        KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
+        KeyValue kvC = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_A, "Nadja".getBytes("UTF-8"));
+        Result result = new Result(Lists.newArrayList(kvA, kvB, kvC));
+
+        Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "prefixB", "dummy value", "prefixA", "Nadja");
 
         SolrInputDocument solrDocument = resultMapper.map(result);
         assertEquals(expectedMap, toRecord(solrDocument).getFields());

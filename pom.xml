@@ -28,7 +28,7 @@
     <version.zookeeper>3.4.5-cdh4.3.0</version.zookeeper>
     <version.jackson>1.9.2</version.jackson>
     <version.httpclient>4.2.3</version.httpclient>
-    <version.cdk>0.6.0</version.cdk>
+    <version.cdk>0.7.0</version.cdk>
 
     <!-- Tells maven plugins what file encoding to use -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
