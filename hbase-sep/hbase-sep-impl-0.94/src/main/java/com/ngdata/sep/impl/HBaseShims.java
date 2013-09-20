@@ -18,9 +18,15 @@ package com.ngdata.sep.impl;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.EmptyWatcher;
 import org.apache.hadoop.hbase.regionserver.wal.HLog;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Result;
+
+import java.util.List;
+
 
 public class HBaseShims {
   public static Get newGet() { return new Get(); }
+  public static Result newResult(List<KeyValue> list) { return new Result(list); }
   public static EmptyWatcher getEmptyWatcherInstance() { return EmptyWatcher.instance; }
   public static String getHLogDirectoryName(String serverName) { return HLog.getHLogDirectoryName(serverName); }
 }

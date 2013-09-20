@@ -35,13 +35,14 @@ import org.apache.solr.common.SolrInputField;
 import org.junit.Test;
 
 import com.cloudera.cdk.morphline.api.Record;
-import com.cloudera.cdk.morphline.base.Fields;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.ngdata.hbaseindexer.conf.FieldDefinition;
 import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
+
+import static com.ngdata.sep.impl.HBaseShims.newResult;
 
 public class MorphlineResultToSolrMapperTest {
 
@@ -60,12 +61,11 @@ public class MorphlineResultToSolrMapperTest {
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
-        Result result = new Result(Lists.newArrayList(kvA, kvB));
+        Result result = newResult(Lists.newArrayList(kvA, kvB));
 
         Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "fieldB", "dummy value");
 
         SolrInputDocument solrDocument = resultMapper.map(result);
-        solrDocument.removeField(Fields.ATTACHMENT_BODY);
         assertEquals(expectedMap, toRecord(solrDocument).getFields());
     }
 
@@ -141,7 +141,7 @@ public class MorphlineResultToSolrMapperTest {
   
         MorphlineResultToSolrMapper resultMapper = createMorphlineMapper(fieldDef);
   
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertTrue(resultMapper.containsRequiredData(result));
     }
@@ -153,7 +153,7 @@ public class MorphlineResultToSolrMapperTest {
         
         MorphlineResultToSolrMapper resultMapper = createMorphlineMapper(fieldDef);
         
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertFalse(resultMapper.containsRequiredData(result));
     }

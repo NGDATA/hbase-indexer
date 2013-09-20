@@ -23,20 +23,46 @@
   <parent>
     <groupId>com.ngdata</groupId>
     <artifactId>hbase-indexer</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.3-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modules>
     <module>hbase-sep-api</module>
     <module>hbase-sep-impl</module>
-    <module>hbase-sep-impl-0.94</module>
-    <module>hbase-sep-impl-0.95</module>
     <module>hbase-sep-demo</module>
     <module>hbase-sep-tools</module>
   </modules>
 
+  <profiles>
+    <profile>
+      <id>0.94</id>
+      <activation>
+        <property>
+          <name>!hbase.api</name>
+        </property>
+      </activation>
+
+      <modules>
+        <module>hbase-sep-impl-0.94</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>0.95</id>
+      <activation>
+        <property>
+          <name>hbase.api</name>
+          <value>0.95</value>
+        </property>
+      </activation>
+
+      <modules>
+        <module>hbase-sep-impl-0.95</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <build>
   </build>
-
 </project>

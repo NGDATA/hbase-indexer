@@ -93,6 +93,15 @@ public class SepModelImpl implements SepModel {
                     return false;
                 }
                 throw e;
+            } catch (Exception e) {
+                // HBase 0.95+ throws at least one extra exception: ReplicationException which we convert into IOException
+                if (e instanceof InterruptedException) {
+                    throw (InterruptedException)e;
+                } else if (e instanceof KeeperException) {
+                    throw (KeeperException)e;
+                } else {
+                    throw new IOException(e);
+                }
             }
 
             return true;
@@ -124,6 +133,9 @@ public class SepModelImpl implements SepModel {
                         return false;
                     }
                     throw e;
+                } catch (Exception e) {
+                    // HBase 0.95+ throws at least one extra exception: ReplicationException which we convert into IOException
+                    throw new IOException(e);
                 }
             }
             String basePath = baseZkPath + "/" + internalName;

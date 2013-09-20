@@ -45,10 +45,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellScanner;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.KeyValueUtil;
 import org.apache.hadoop.hbase.ipc.RpcServer;
 import org.apache.hadoop.hbase.protobuf.ReplicationProtbufUtil;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos;
+import org.apache.hadoop.hbase.ipc.PayloadCarryingRpcController;
+import org.apache.hadoop.hbase.protobuf.generated.WALProtos;
 import org.apache.hadoop.hbase.regionserver.wal.HLog;
 import org.apache.hadoop.hbase.regionserver.wal.HLogKey;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -189,24 +195,32 @@ public class SepConsumer extends BaseHRegionServer {
 
         // TODO Recording of last processed timestamp won't work if two batches of log entries are sent out of order
         long lastProcessedTimestamp = -1;
-        HLog.Entry[] entries = ReplicationProtbufUtil.toHLogEntries(request.getEntryList());
 
         SepEventExecutor eventExecutor = new SepEventExecutor(listener, executors, 100, sepMetrics);
 
-        for (final HLog.Entry entry : entries) {
-            final HLogKey entryKey = entry.getKey();
+        List<AdminProtos.WALEntry> entries = request.getEntryList();
+        CellScanner cells = ((PayloadCarryingRpcController)controller).cellScanner();
+
+        for (final AdminProtos.WALEntry entry : entries) {
+            final WALProtos.WALKey entryKey = entry.getKey();
             if (entryKey.getWriteTime() < subscriptionTimestamp) {
                 continue;
             }
-            byte[] tableName = entryKey.getTablename();
+            TableName tableName = TableName.valueOf(entry.getKey().getTableName().toByteArray());
             Multimap<ByteBuffer, KeyValue> keyValuesPerRowKey = ArrayListMultimap.create();
             final Map<ByteBuffer, byte[]> payloadPerRowKey = Maps.newHashMap();
-            for (final KeyValue kv : entry.getEdit().getKeyValues()) {
-                ByteBuffer rowKey = ByteBuffer.wrap(kv.getBuffer(), kv.getRowOffset(), kv.getRowLength());
+            int count = entry.getAssociatedCellCount();
+            for (int i = 0; i < count; i++) {
+                if (!cells.advance()) {
+                    throw new ArrayIndexOutOfBoundsException("Expected=" + count + ", index=" + i);
+                }
+                Cell cell = cells.current();
+                ByteBuffer rowKey = ByteBuffer.wrap(cell.getRowArray(), cell.getRowOffset(), cell.getRowLength());
                 byte[] payload;
-                if (payloadExtractor != null && (payload = payloadExtractor.extractPayload(tableName, kv)) != null) {
+                KeyValue kv = KeyValueUtil.ensureKeyValue(cell);
+                if (payloadExtractor != null && (payload = payloadExtractor.extractPayload(tableName.toBytes(), kv)) != null) {
                     if (payloadPerRowKey.containsKey(rowKey)) {
-                        log.error("Multiple payloads encountered for row " + Bytes.toStringBinary(kv.getRow())
+                        log.error("Multiple payloads encountered for row " + Bytes.toStringBinary(rowKey)
                                 + ", choosing " + Bytes.toStringBinary(payloadPerRowKey.get(rowKey)));
                     } else {
                         payloadPerRowKey.put(rowKey, payload);
@@ -218,7 +232,7 @@ public class SepConsumer extends BaseHRegionServer {
             for (final ByteBuffer rowKeyBuffer : keyValuesPerRowKey.keySet()) {
                 final List<KeyValue> keyValues = (List<KeyValue>)keyValuesPerRowKey.get(rowKeyBuffer);
 
-                final SepEvent sepEvent = new SepEvent(tableName, keyValues.get(0).getRow(), keyValues,
+                final SepEvent sepEvent = new SepEvent(tableName.toBytes(), keyValues.get(0).getRow(), keyValues,
                         payloadPerRowKey.get(rowKeyBuffer));
                 eventExecutor.scheduleSepEvent(sepEvent);
                 lastProcessedTimestamp = Math.max(lastProcessedTimestamp, entry.getKey().getWriteTime());

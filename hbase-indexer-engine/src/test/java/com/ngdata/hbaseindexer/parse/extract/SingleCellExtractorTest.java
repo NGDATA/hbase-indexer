@@ -31,6 +31,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.ngdata.sep.impl.HBaseShims.newResult;
+
 public class SingleCellExtractorTest {
 
     private static final byte[] ROW = Bytes.toBytes("row");
@@ -80,14 +82,14 @@ public class SingleCellExtractorTest {
 
     @Test
     public void testContainsTarget_True() {
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY, COLUMN_QUALIFIER,
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY, COLUMN_QUALIFIER,
                 Bytes.toBytes("value"))));
         assertTrue(extractor.containsTarget(result));
     }
 
     @Test
     public void testContainsTarget_False() {
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY,
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY,
                 Bytes.toBytes("wrong qualifier"), Bytes.toBytes("value"))));
         assertFalse(extractor.containsTarget(result));
     }

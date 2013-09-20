@@ -56,6 +56,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.common.SolrInputDocument;
 
+import static com.ngdata.sep.impl.HBaseShims.newResult;
+
 /**
  * The indexing algorithm. It receives an event from the SEP, handles it based on the configuration, and eventually
  * calls Solr.
@@ -187,14 +189,14 @@ public abstract class Indexer implements EventListener {
             List<KeyValue> keyValues = new ArrayList<KeyValue>(eventKeyValues.size());
 
             for (KeyValue kv : eventKeyValues) {
-                if (!kv.isDelete() && !kv.isInternal()) {
+                if (!kv.isDelete() && !kv.isDeleteFamily()) {
                     keyValues.add(kv);
                 }
             }
 
             // A Result object requires that the KeyValues are sorted (e.g., it does binary search on them)
             Collections.sort(keyValues, KeyValue.COMPARATOR);
-            return new Result(keyValues);
+            return newResult(keyValues);
         }
 
         private Result readRow(byte[] row) throws IOException {
@@ -287,7 +289,7 @@ public abstract class Indexer implements EventListener {
                 if (idToKvEntry.getValue().isDelete()) {
                     handleDelete(documentId, keyValue, updateCollector);
                 } else {
-                    Result result = new Result(Collections.singletonList(keyValue));
+                    Result result = newResult(Collections.singletonList(keyValue));
                     SolrInputDocument document = mapper.map(result);
                     document.addField(conf.getUniqueKeyField(), documentId);
                     

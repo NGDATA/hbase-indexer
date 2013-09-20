@@ -20,6 +20,7 @@ import static com.ngdata.sep.impl.SepModelImpl.toExternalSubscriptionName;
 import java.io.IOException;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.UUID;
 
 import com.ngdata.sep.WALEditFilter;
 import com.ngdata.sep.WALEditFilterProvider;
@@ -32,6 +33,8 @@ import org.apache.hadoop.hbase.regionserver.wal.HLog;
 import org.apache.hadoop.hbase.regionserver.wal.WALEdit;
 import org.apache.hadoop.hbase.replication.regionserver.ReplicationSource;
 import org.apache.hadoop.hbase.replication.regionserver.ReplicationSourceManager;
+import org.apache.hadoop.hbase.replication.ReplicationQueues;
+import org.apache.hadoop.hbase.replication.ReplicationPeers;
 
 /**
  * Custom replication source for distributing Side-Effect Processor (SEP) events to listeners
@@ -64,9 +67,10 @@ public class SepReplicationSource extends ReplicationSource {
     }
 
     @Override
-    public void init(Configuration conf, FileSystem fs, ReplicationSourceManager manager, Stoppable stopper,
-            AtomicBoolean replicating, String peerClusterZnode) throws IOException {
-        super.init(conf, fs, manager, stopper, replicating, peerClusterZnode);
+    public void init(Configuration conf, FileSystem fs, ReplicationSourceManager manager, 
+            ReplicationQueues queues, ReplicationPeers peers, Stoppable stopper,
+            String peerClusterZnode, UUID uuid) throws IOException {
+        super.init(conf, fs, manager, queues, peers, stopper, peerClusterZnode, uuid);
         log.debug("init on cluster " + getPeerClusterId() + " on node " + getPeerClusterZnode());
         setWALEditFilter(loadEditFilter(getPeerClusterId(), ServiceLoader.load(WALEditFilterProvider.class)));
     }
