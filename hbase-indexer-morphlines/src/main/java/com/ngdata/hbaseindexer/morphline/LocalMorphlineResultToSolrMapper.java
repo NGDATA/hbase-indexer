@@ -15,6 +15,8 @@
  */
 package com.ngdata.hbaseindexer.morphline;
 
+import static com.ngdata.sep.impl.HBaseShims.newGet;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -150,7 +152,7 @@ final class LocalMorphlineResultToSolrMapper implements ResultToSolrMapper, Conf
         this.morphlineFileAndId = morphlineFile + "@" + morphlineId;
 
         // precompute familyMap; see DefaultResultToSolrMapper ctor
-        Get get = new Get();
+        Get get = newGet();
         for (ByteArrayExtractor extractor : morphlineContext.getExtractors()) {
             byte[] columnFamily = extractor.getColumnFamily();
             byte[] columnQualifier = extractor.getColumnQualifier();

@@ -52,6 +52,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import static com.ngdata.sep.impl.HBaseShims.newResult;
+
 public class IndexerTest {
 
     private static final String TABLE_A = "_table_a_";
@@ -166,7 +168,7 @@ public class IndexerTest {
 
         ResultToSolrMapper mapper = createHbaseToSolrMapper(false);
 
-        when(tableA.get(any(Get.class))).thenReturn(new Result(Lists.newArrayList(new KeyValue())));
+        when(tableA.get(any(Get.class))).thenReturn(newResult(Lists.newArrayList(new KeyValue())));
 
         Indexer indexer = Indexer.createIndexer("index name", conf, mapper, tablePool, solrServer);
 

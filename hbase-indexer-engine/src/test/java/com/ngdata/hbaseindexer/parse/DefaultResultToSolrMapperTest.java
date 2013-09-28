@@ -47,6 +47,8 @@ import org.junit.Test;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import static com.ngdata.sep.impl.HBaseShims.newResult;
+
 public class DefaultResultToSolrMapperTest {
 
     private static final byte[] ROW = Bytes.toBytes("row");
@@ -74,7 +76,7 @@ public class DefaultResultToSolrMapperTest {
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes());
-        Result result = new Result(Lists.newArrayList(kvA, kvB));
+        Result result = newResult(Lists.newArrayList(kvA, kvB));
 
         SolrInputDocument solrDocument = resultMapper.map(result);
 
@@ -96,7 +98,7 @@ public class DefaultResultToSolrMapperTest {
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("test value"));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes());
-        Result result = new Result(Lists.newArrayList(kvA, kvB));
+        Result result = newResult(Lists.newArrayList(kvA, kvB));
 
         SolrInputDocument solrDocument = resultMapper.map(result);
 
@@ -180,7 +182,7 @@ public class DefaultResultToSolrMapperTest {
                 Lists.newArrayList(new FieldDefinition("fieldname", "cfA:qualifierA", ValueSource.VALUE, "int")),
                         Collections.<DocumentExtractDefinition>emptyList(), indexSchema);
         
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertTrue(resultToSolrMapper.containsRequiredData(result));
     }
@@ -192,7 +194,7 @@ public class DefaultResultToSolrMapperTest {
                 Lists.newArrayList(new FieldDefinition("fieldname", "cfA:quali*", ValueSource.VALUE, "int")),
                         Collections.<DocumentExtractDefinition>emptyList(), indexSchema);
         
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertFalse(resultToSolrMapper.containsRequiredData(result));
     }

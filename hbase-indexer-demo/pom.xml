@@ -35,11 +35,6 @@
       <artifactId>hadoop-common</artifactId>
       <version>${version.hadoop}</version>
     </dependency>
-    <dependency>
-      <groupId>org.apache.hbase</groupId>
-      <artifactId>hbase</artifactId>
-      <version>${version.hbase}</version>
-    </dependency>
     <!-- Normally, client applications don't need to depend on hbase-indexer stuff, we only
          use it here to load the hbase connection settings from hbase-indexer-site.xml -->
     <dependency>

@@ -42,6 +42,8 @@ import com.google.common.collect.Multimap;
 import com.ngdata.hbaseindexer.conf.FieldDefinition;
 import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
 
+import static com.ngdata.sep.impl.HBaseShims.newResult;
+
 public class MorphlineResultToSolrMapperTest {
 
     private static final byte[] ROW = Bytes.toBytes("row");
@@ -60,7 +62,7 @@ public class MorphlineResultToSolrMapperTest {
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
-        Result result = new Result(Lists.newArrayList(kvA, kvB));
+        Result result = newResult(Lists.newArrayList(kvA, kvB));
 
         Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "fieldB", "dummy value");
 
@@ -177,7 +179,7 @@ public class MorphlineResultToSolrMapperTest {
   
         MorphlineResultToSolrMapper resultMapper = createMorphlineMapper(fieldDef);
   
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertTrue(resultMapper.containsRequiredData(result));
     }
@@ -189,7 +191,7 @@ public class MorphlineResultToSolrMapperTest {
         
         MorphlineResultToSolrMapper resultMapper = createMorphlineMapper(fieldDef);
         
-        Result result = new Result(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertFalse(resultMapper.containsRequiredData(result));
     }

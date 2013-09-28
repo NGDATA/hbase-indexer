@@ -15,6 +15,8 @@
  */
 package com.ngdata.hbaseindexer.supervisor;
 
+import com.ngdata.sep.impl.HBaseShims; 
+
 import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_ADDED;
 import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_DELETED;
 import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_UPDATED;
@@ -59,7 +61,7 @@ import com.ngdata.sep.util.zookeeper.ZooKeeperItf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.EmptyWatcher;
+// import org.apache.hadoop.hbase.EmptyWatcher;
 import org.apache.hadoop.hbase.client.HTablePool;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -282,7 +284,7 @@ public class IndexerSupervisor {
     
     private IndexSchema loadIndexSchema(IndexerDefinition indexerDef) throws IOException, ParserConfigurationException, SAXException, InterruptedException {
         Map<String, String> connParams = indexerDef.getConnectionParams();
-        ZooKeeper zk = new ZooKeeper(connParams.get(SolrConnectionParams.ZOOKEEPER), 30000, EmptyWatcher.instance);
+        ZooKeeper zk = new ZooKeeper(connParams.get(SolrConnectionParams.ZOOKEEPER), 30000, HBaseShims.getEmptyWatcherInstance());
         SolrConfigLoader solrConfigLoader = new SolrConfigLoader(connParams.get(SolrConnectionParams.COLLECTION), zk);
 
         SolrConfig solrConfig = solrConfigLoader.loadSolrConfig();

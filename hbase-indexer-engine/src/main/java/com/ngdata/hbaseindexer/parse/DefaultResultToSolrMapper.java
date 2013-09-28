@@ -15,6 +15,8 @@
  */
 package com.ngdata.hbaseindexer.parse;
 
+import static com.ngdata.sep.impl.HBaseShims.newGet;
+
 import static com.ngdata.hbaseindexer.metrics.IndexerMetricsUtil.metricName;
 
 import java.util.List;
@@ -93,7 +95,7 @@ public class DefaultResultToSolrMapper implements ResultToSolrMapper {
             extractors.add(byteArrayExtractor);
         }
 
-        Get get = new Get();
+        Get get = newGet();
         for (ByteArrayExtractor extractor : extractors) {
 
             byte[] columnFamily = extractor.getColumnFamily();

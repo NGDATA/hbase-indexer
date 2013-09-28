@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 import com.ngdata.sep.WALEditFilter;
 import com.ngdata.sep.WALEditFilterProvider;
 import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.regionserver.wal.HLog;
 import org.apache.hadoop.hbase.regionserver.wal.WALEdit;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
@@ -74,34 +75,34 @@ public class SepReplicationSourceTest {
         WALEditFilter editFilter = mock(WALEditFilter.class);
         sepReplicationSource.setWALEditFilter(editFilter);
 
-        WALEdit walEdit = new WALEdit();
+        HLog.Entry entry = new HLog.Entry();
         KeyValue keyValue = new KeyValue(Bytes.toBytes("row"), Bytes.toBytes("cf"), Bytes.toBytes("qual"),
                 Bytes.toBytes("value"));
         NavigableMap<byte[], Integer> scopes = Maps.newTreeMap(Bytes.BYTES_COMPARATOR);
         scopes.put(Bytes.toBytes("cf"), 1);
-        walEdit.setScopes(scopes);
-        walEdit.add(keyValue);
+        entry.getKey().setScopes(scopes);
+        entry.getEdit().add(keyValue);
 
-        sepReplicationSource.removeNonReplicableEdits(walEdit);
+        sepReplicationSource.removeNonReplicableEdits(entry);
 
-        verify(editFilter).apply(walEdit);
+        verify(editFilter).apply(entry);
     }
 
     @Test
     public void testRemoveNonReplicableEdits_NoCustomFilter() {
         sepReplicationSource.setWALEditFilter(null);
 
-        WALEdit walEdit = new WALEdit();
+        HLog.Entry entry = new HLog.Entry();
         KeyValue keyValue = new KeyValue(Bytes.toBytes("row"), Bytes.toBytes("cf"), Bytes.toBytes("qual"),
                 Bytes.toBytes("value"));
         NavigableMap<byte[], Integer> scopes = Maps.newTreeMap(Bytes.BYTES_COMPARATOR);
         scopes.put(Bytes.toBytes("cf"), 1);
-        walEdit.setScopes(scopes);
-        walEdit.add(keyValue);
+        entry.getKey().setScopes(scopes);
+        entry.getEdit().add(keyValue);
 
-        sepReplicationSource.removeNonReplicableEdits(walEdit);
+        sepReplicationSource.removeNonReplicableEdits(entry);
 
-        assertEquals(1, walEdit.size());
+        assertEquals(1, entry.getEdit().size());
     }
 
 }

@@ -26,6 +26,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.ngdata.sep.impl.HBaseShims.newResult;
+
 public class PrefixMatchingQualifierExtractorTest {
 
     private static final byte[] ROW = new byte[] { 1, 2, 3 };
@@ -46,7 +48,7 @@ public class PrefixMatchingQualifierExtractorTest {
         KeyValue kvA2 = new KeyValue(ROW, COLFAM_A, QUALIFIER_A2, VALUE_A2);
         KeyValue kvB1 = new KeyValue(ROW, COLFAM_B, QUALIFIER_B1, VALUE_B1);
 
-        result = new Result(Lists.newArrayList(kvA1, kvA2, kvB1));
+        result = newResult(Lists.newArrayList(kvA1, kvA2, kvB1));
     }
 
     @Test

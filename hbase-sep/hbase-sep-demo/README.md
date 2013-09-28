@@ -48,8 +48,8 @@ Edit conf/hbase-site.xml and add the following configuration:
 
 This makes available the SepReplicationSource to HBase.
 
-    cp hbase-sep/impl/target/hbase-sep-impl-1.0-SNAPSHOT.jar hbase/lib/
-    cp hbase-sep/api/target/hbase-sep-api-1.0-SNAPSHOT.jar hbase/lib/
+    cp hbase-sep/impl/target/hbase-sep-impl-1.0.jar hbase/lib/
+    cp hbase-sep/api/target/hbase-sep-api-1.0.jar hbase/lib/
 
 ### Start HBase
 

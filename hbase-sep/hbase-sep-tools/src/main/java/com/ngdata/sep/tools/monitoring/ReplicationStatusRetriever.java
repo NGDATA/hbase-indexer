@@ -15,6 +15,8 @@
  */
 package com.ngdata.sep.tools.monitoring;
 
+import com.ngdata.sep.impl.HBaseShims;
+
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -228,7 +230,7 @@ public class ReplicationStatusRetriever {
      * @param hlogName name of HLog
      */
     private long getLogFileSize(String serverName, String hlogName) throws IOException {
-        Path hbaseLogDir = new Path(hbaseRootDir, HLog.getHLogDirectoryName(serverName));
+        Path hbaseLogDir = new Path(hbaseRootDir, HBaseShims.getHLogDirectoryName(serverName));
         Path path = new Path(hbaseLogDir, hlogName);
         try {
             FileStatus status = fileSystem.getFileStatus(path);
