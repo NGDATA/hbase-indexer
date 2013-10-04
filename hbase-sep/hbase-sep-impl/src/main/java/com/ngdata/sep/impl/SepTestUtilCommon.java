@@ -44,7 +44,7 @@ import java.util.Set;
  * to help waiting on that: {@link #waitOnReplicationPeerReady(String)} and
  * {@link #waitOnAllReplicationPeersStopped()}.</p>
  */
-public class SepTestUtil {
+public class SepTestUtilCommon {
     /**
      * Wait for all outstanding waledit's that are currently in the hlog(s) to be replicated. Any new waledits
      * produced during the calling of this method won't be waited for.
@@ -54,7 +54,7 @@ public class SepTestUtil {
      * of the new peer and that the peer's mbean is registered, otherwise this method might skip
      * that peer (usually will go so fast that this problem doesn't really exist, but just to be sure).</p>
      */
-    public static void waitOnReplication(Configuration conf, long timeout) throws Exception {
+    public static void waitOnReplication(Configuration conf, long timeout, String dummyTable, String mbeanName, String attrName) throws Exception {
         // Wait for the SEP to have processed all events.
         // The idea is as follows:
         //   - we want to be sure hbase replication processed all outstanding events in the hlog
@@ -72,7 +72,7 @@ public class SepTestUtil {
         // "Failed openScanner" at KeyComparator.compareWithoutRow in connect mode)
         // Writing to the -ROOT- table has the advantage that it isn't replicated, so event consumers won't
         // see any of these events.
-        HTable table = new HTable(conf, "-ROOT-");
+        HTable table = new HTable(conf, dummyTable);
         Delete delete = new Delete(Bytes.toBytes("i-hope-this-row-does-not-exist"));
         table.delete(delete);
 
@@ -86,13 +86,13 @@ public class SepTestUtil {
 
         // Using JMX, query the size of the queue of hlogs to be processed for each replication source
         MBeanServerConnection connection = java.lang.management.ManagementFactory.getPlatformMBeanServer();
-        ObjectName replicationSources = new ObjectName("hadoop:service=Replication,name=ReplicationSource for *");
+        ObjectName replicationSources = new ObjectName(mbeanName);
         Set<ObjectName> mbeans = connection.queryNames(replicationSources, null);
         long tryUntil = System.currentTimeMillis() + timeout;
         nextMBean: for (ObjectName mbean : mbeans) {
             int logQSize = Integer.MAX_VALUE;
             while (logQSize > 0 && System.currentTimeMillis() < tryUntil) {
-                logQSize = (Integer)connection.getAttribute(mbean, "sizeOfLogQueue");
+                logQSize = ((Number)connection.getAttribute(mbean, attrName)).intValue();
                 // logQSize == 0 means there is one active hlog that is polled by replication
                 // and none that are queued for later processing
                 // System.out.println("hlog q size is " + logQSize + " for " + mbean.toString() + " max wait left is " +
@@ -155,15 +155,6 @@ public class SepTestUtil {
         if (waited) {
             System.out.println("done");
         }
-
-        // At the time of this writing, HBase didn't unregister the MBean of a replication source
-        try {
-            MBeanServerConnection connection = java.lang.management.ManagementFactory.getPlatformMBeanServer();
-            ObjectName replicationSourceMBean = new ObjectName("hadoop:service=Replication,name=ReplicationSource for " + peerId);
-            connection.unregisterMBean(replicationSourceMBean);
-        } catch (Exception e) {
-            throw new RuntimeException("Error removing replication source mean for " + peerId, e);
-        }
     }
 
     public static void waitOnAllReplicationPeersStopped() {
@@ -185,17 +176,6 @@ public class SepTestUtil {
 
         if (waited) {
             System.out.println("done");
-        }
-
-        // At the time of this writing, HBase didn't unregister the MBean of a replication source
-        try {
-            MBeanServerConnection connection = java.lang.management.ManagementFactory.getPlatformMBeanServer();
-            ObjectName query = new ObjectName("hadoop:service=Replication,name=ReplicationSource for *");
-            for (ObjectName name : connection.queryNames(query, null)) {
-                connection.unregisterMBean(name);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error removing replication source mbean", e);
         }
     }
 

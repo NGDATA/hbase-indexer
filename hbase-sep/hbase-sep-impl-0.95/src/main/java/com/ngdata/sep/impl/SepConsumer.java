@@ -202,11 +202,8 @@ public class SepConsumer extends BaseHRegionServer {
         CellScanner cells = ((PayloadCarryingRpcController)controller).cellScanner();
 
         for (final AdminProtos.WALEntry entry : entries) {
-            final WALProtos.WALKey entryKey = entry.getKey();
-            if (entryKey.getWriteTime() < subscriptionTimestamp) {
-                continue;
-            }
-            TableName tableName = TableName.valueOf(entry.getKey().getTableName().toByteArray());
+            TableName tableName = (entry.getKey().getWriteTime() < subscriptionTimestamp) ? null :
+                                  TableName.valueOf(entry.getKey().getTableName().toByteArray());
             Multimap<ByteBuffer, KeyValue> keyValuesPerRowKey = ArrayListMultimap.create();
             final Map<ByteBuffer, byte[]> payloadPerRowKey = Maps.newHashMap();
             int count = entry.getAssociatedCellCount();
@@ -214,6 +211,12 @@ public class SepConsumer extends BaseHRegionServer {
                 if (!cells.advance()) {
                     throw new ArrayIndexOutOfBoundsException("Expected=" + count + ", index=" + i);
                 }
+
+                // this signals to us that we simply need to skip over count of cells
+                if (tableName == null) {
+                    continue;
+                }
+
                 Cell cell = cells.current();
                 ByteBuffer rowKey = ByteBuffer.wrap(cell.getRowArray(), cell.getRowOffset(), cell.getRowLength());
                 byte[] payload;
