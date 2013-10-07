@@ -56,7 +56,7 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
 
     @Override
     public Command build(Config config, Command parent, Command child, MorphlineContext context) {
-        return new ExtractHBaseCells(config, parent, child, context);
+        return new ExtractHBaseCells(this, config, parent, child, context);
     }
 
     // /////////////////////////////////////////////////////////////////////////////
@@ -66,8 +66,8 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
 
         private final List<Mapping> mappings = new ArrayList();
 
-        public ExtractHBaseCells(Config config, Command parent, Command child, MorphlineContext context) {
-            super(config, parent, child, context);
+        public ExtractHBaseCells(CommandBuilder builder, Config config, Command parent, Command child, MorphlineContext context) {
+            super(builder, config, parent, child, context);
             for (Config mapping : getConfigs().getConfigList(config, "mappings")) {
                 mappings.add(new Mapping(mapping, context));
             }
