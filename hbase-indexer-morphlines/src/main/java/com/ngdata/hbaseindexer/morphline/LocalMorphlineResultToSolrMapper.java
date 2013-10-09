@@ -27,14 +27,6 @@ import java.util.Map.Entry;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.SolrInputDocument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.cloudera.cdk.morphline.api.Command;
 import com.cloudera.cdk.morphline.api.MorphlineCompilationException;
 import com.cloudera.cdk.morphline.api.Record;
@@ -51,43 +43,18 @@ import com.ngdata.hbaseindexer.parse.ByteArrayExtractor;
 import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.SolrInputDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Pipes a given HBase Result into a morphline and extracts and transforms the specified HBase cells to a
- * SolrInputDocument. Note that for proper functioning the morphline should not contain a loadSolr command because
- * loading documents into Solr is the responsibility of the enclosing Indexer.
- * 
- * Example config file:
- * 
- * <pre>
- * <indexer
- * 
- *   <!--
- *   The HBase Lily Morphline Indexer supports the standard attributes of an HBase Lily Indexer
- *   (i.e. table, mapping-type, read-row, unique-key-formatter, unique-key-field, row-field, column-family-field),
- *   as documented at https://github.com/NGDATA/hbase-indexer/wiki/Indexer-configuration
- * 
- *   In addition, morphline specific attributes are supported, as follows:
- *   -->
- * 
- *   <!-- The name of the HBase table to index -->
- *   table="record"
- * 
- *   <!-- Parameter mapper (required): Fully qualified class name of morphline mapper -->
- *   mapper="com.ngdata.hbaseindexer.morphline.MorphlineResultToSolrMapper">
- * 
- *   <!--
- *   Parameter morphlineFile (required): The relative or absolute path on the local file system to the morphline configuration file. Example: /etc/hbase-solr/conf/morphlines.conf
- *   -->
- *   <param name="morphlineFile" value="morphlines.conf"/>
- * 
- *   <--
- *   Parameter morphlineId (optional): Name used to identify a morphline if there are multiple morphlines in a morphline config file
- *   -->
- *   <param name="morphlineId" value="morphline1"/>
- * 
- * </indexer>
- * </pre>
+ * Performs Result to Solr mapping using morphlines.
+ * <p>
+ * This class is not thread-safe.
  */
 final class LocalMorphlineResultToSolrMapper implements ResultToSolrMapper, Configurable {
 
@@ -102,17 +69,6 @@ final class LocalMorphlineResultToSolrMapper implements ResultToSolrMapper, Conf
      * Information to be used for constructing a Get to fetch data required for indexing.
      */
     private Map<byte[], NavigableSet<byte[]>> familyMap;
-
-    public static final String MORPHLINE_FILE_PARAM = "morphlineFile";
-    public static final String MORPHLINE_ID_PARAM = "morphlineId";
-
-    /**
-     * Morphline variables can be passed from the indexer definition config file to the Morphline, e.g.: <param
-     * name="morphlineVariable.zkHost" value="127.0.0.1:2181/solr"/>
-     */
-    public static final String MORPHLINE_VARIABLE_PARAM = "morphlineVariable";
-
-    public static final String OUTPUT_MIME_TYPE = "application/java-hbase-result";
 
     private static final Logger LOG = LoggerFactory.getLogger(LocalMorphlineResultToSolrMapper.class);
 
@@ -134,14 +90,15 @@ final class LocalMorphlineResultToSolrMapper implements ResultToSolrMapper, Conf
         this.morphlineContext = (HBaseMorphlineContext)new HBaseMorphlineContext.Builder().setExceptionHandler(
                 faultTolerance).setMetricRegistry(new MetricRegistry()).build();
 
-        String morphlineFile = params.get(MORPHLINE_FILE_PARAM);
-        String morphlineId = params.get(MORPHLINE_ID_PARAM);
+        String morphlineFile = params.get(MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM);
+        String morphlineId = params.get(MorphlineResultToSolrMapper.MORPHLINE_ID_PARAM);
         if (morphlineFile == null || morphlineFile.trim().length() == 0) {
-            throw new MorphlineCompilationException("Missing parameter: " + MORPHLINE_FILE_PARAM, null);
+            throw new MorphlineCompilationException("Missing parameter: "
+                        + MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, null);
         }
         Map morphlineVariables = new HashMap();
         for (Map.Entry<String, String> entry : params.entrySet()) {
-            String variablePrefix = MORPHLINE_VARIABLE_PARAM + ".";
+            String variablePrefix = MorphlineResultToSolrMapper.MORPHLINE_VARIABLE_PARAM + ".";
             if (entry.getKey().startsWith(variablePrefix)) {
                 morphlineVariables.put(entry.getKey().substring(variablePrefix.length()), entry.getValue());
             }
@@ -226,7 +183,7 @@ final class LocalMorphlineResultToSolrMapper implements ResultToSolrMapper, Conf
         try {
             Record record = new Record();
             record.put(Fields.ATTACHMENT_BODY, result);
-            record.put(Fields.ATTACHMENT_MIME_TYPE, OUTPUT_MIME_TYPE);
+            record.put(Fields.ATTACHMENT_MIME_TYPE, MorphlineResultToSolrMapper.OUTPUT_MIME_TYPE);
             collector.reset();
             try {
                 Notifications.notifyStartSession(morphline);

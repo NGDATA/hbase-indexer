@@ -15,19 +15,16 @@
  */
 package com.ngdata.hbaseindexer.morphline;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+import com.ngdata.hbaseindexer.Configurable;
+import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.solr.common.SolrInputDocument;
-
-import com.google.common.base.Preconditions;
-import com.ngdata.hbaseindexer.Configurable;
-import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
 
 /**
  * Pipes a given HBase Result into a morphline and extracts and transforms the specified HBase cells to a
@@ -35,9 +32,9 @@ import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
  * loading documents into Solr is the responsibility of the enclosing Indexer.
  * 
  * Example config file:
- * 
  * <pre>
- * <indexer
+ * {@code
+ * <indexer>
  * 
  *   <!--
  *   The HBase Lily Morphline Indexer supports the standard attributes of an HBase Lily Indexer
@@ -64,21 +61,35 @@ import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
  *   <param name="morphlineId" value="morphline1"/>
  * 
  * </indexer>
+ * }
  * </pre>
+ * <p>
+ * This class is actually a thread-safe wrapper around the {@link LocalMorphlineResultToSolrMapper}, which handles actual
+ * morphline execution.
+ * 
+ * @see LocalMorphlineResultToSolrMapper
  */
 public final class MorphlineResultToSolrMapper implements ResultToSolrMapper, Configurable {
 
     private Map<String, String> params;
-    private final Object lock = new Object();
 
     /*
-     * TODO: Looks like SEP calls the *same* MorphlineResultToSolrMapper instance from multiple threads at the same
-     * time. This would cause race conditions. It would be more efficient, scalable and simple for SEP to instantiate a
-     * separate ResultToSolrMapper instance per thread on program startup (and have one or two threads per CPU core),
-     * and have each thread reuse it's own local ResultToSolrMapper many times. For now we use a crude lower-level
-     * pooling work-around below.
+     * The SEP calls the *same* MorphlineResultToSolrMapper instance from multiple threads at the same
+     * time. Morphlines contain state within a method call, so we use a single LocalMorphlineResultToSolrMapper
+     * per thread.
      */
-    private final BlockingQueue<LocalMorphlineResultToSolrMapper> pool = new LinkedBlockingQueue();
+    private final ThreadLocal<LocalMorphlineResultToSolrMapper> localMorphlineMapper = new ThreadLocal<LocalMorphlineResultToSolrMapper>() {
+        
+        @Override
+        protected LocalMorphlineResultToSolrMapper initialValue() {
+            if (params == null) {
+                throw new IllegalStateException("Can't create a LocalMorphlineToSolrMapper, not yet configured");
+            }
+            LocalMorphlineResultToSolrMapper localMorphlineMapper = new LocalMorphlineResultToSolrMapper();
+            localMorphlineMapper.configure(ImmutableMap.copyOf(params));
+            return localMorphlineMapper;
+        }
+    };
 
     public static final String MORPHLINE_FILE_PARAM = "morphlineFile";
     public static final String MORPHLINE_ID_PARAM = "morphlineId";
@@ -97,66 +108,27 @@ public final class MorphlineResultToSolrMapper implements ResultToSolrMapper, Co
     @Override
     public void configure(Map<String, String> params) {
         Preconditions.checkNotNull(params);
-        this.params = params;
-        returnToPool(borrowFromPool()); // fail fast on morphline compilation exception
-    }
-
-    private LocalMorphlineResultToSolrMapper borrowFromPool() {
-        LocalMorphlineResultToSolrMapper mapper = pool.poll();
-        if (mapper == null) {
-            mapper = createMapper();
-        }
-        return mapper;
-    }
-
-    private LocalMorphlineResultToSolrMapper createMapper() {
-        LocalMorphlineResultToSolrMapper mapper = new LocalMorphlineResultToSolrMapper();
-        Map<String, String> localParams;
-        synchronized (lock) {
-            localParams = new HashMap(params);
-        }
-        mapper.configure(localParams);
-        return mapper;
-    }
-
-    private void returnToPool(LocalMorphlineResultToSolrMapper mapper) {
-        try {
-            pool.put(mapper);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        this.params = ImmutableMap.copyOf(params);
     }
 
     @Override
     public boolean containsRequiredData(Result result) {
-        LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
-        boolean returnValue = mapper.containsRequiredData(result);
-        returnToPool(mapper);
-        return returnValue;
+        return localMorphlineMapper.get().containsRequiredData(result);
     }
 
     @Override
     public boolean isRelevantKV(KeyValue kv) {
-        LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
-        boolean returnValue = mapper.isRelevantKV(kv);
-        returnToPool(mapper);
-        return returnValue;
+        return localMorphlineMapper.get().isRelevantKV(kv);
     }
 
     @Override
     public Get getGet(byte[] row) {
-        LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
-        Get returnValue = mapper.getGet(row);
-        returnToPool(mapper);
-        return returnValue;
+        return localMorphlineMapper.get().getGet(row);
     }
 
     @Override
     public SolrInputDocument map(Result result) {
-        LocalMorphlineResultToSolrMapper mapper = borrowFromPool();
-        SolrInputDocument returnValue = mapper.map(result);
-        returnToPool(mapper);
-        return returnValue;
+        return localMorphlineMapper.get().map(result);
     }
 
 }
