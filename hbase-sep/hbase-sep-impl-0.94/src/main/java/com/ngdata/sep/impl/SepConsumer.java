@@ -48,6 +48,8 @@ import org.apache.hadoop.hbase.regionserver.wal.HLog;
 import org.apache.hadoop.hbase.regionserver.wal.HLogKey;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
+import org.apache.hadoop.hbase.security.User;
+import org.apache.hadoop.hbase.zookeeper.ZKUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -122,7 +124,15 @@ public class SepConsumer extends BaseHRegionServer {
         
         this.serverName = new ServerName(hostName, rpcServer.getListenerAddress().getPort(), System.currentTimeMillis());
         this.zkWatcher = new ZooKeeperWatcher(hbaseConf, this.serverName.toString(), null);
-        
+
+        // login the zookeeper client principal (if using security)
+        ZKUtil.loginClient(hbaseConf, "hbase.zookeeper.client.keytab.file",
+                           "hbase.zookeeper.client.kerberos.principal", hostName);
+
+        // login the server principal (if using secure Hadoop)
+        User.login(hbaseConf, "hbase.regionserver.keytab.file",
+                   "hbase.regionserver.kerberos.principal", hostName);
+
         for (int i = 0; i < threadCnt; i++) {
             ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 10, TimeUnit.SECONDS,
                     new ArrayBlockingQueue<Runnable>(100));

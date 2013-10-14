@@ -29,6 +29,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
 
 import org.apache.hadoop.hbase.ServerName;
+import org.apache.hadoop.hbase.security.User;
+import org.apache.hadoop.hbase.zookeeper.ZKUtil;
+
+import com.google.protobuf.RpcController;
+import com.google.protobuf.ServiceException;
+import com.ngdata.sep.util.concurrent.WaitPolicy;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -75,16 +81,15 @@ public class SepConsumer extends BaseHRegionServer {
     private final String subscriptionId;
     private long subscriptionTimestamp;
     private EventListener listener;
-    private final String hostName;
     private final ZooKeeperItf zk;
     private final Configuration hbaseConf;
     private RpcServer rpcServer;
+    private ServerName serverName;
+    private ZooKeeperWatcher zkWatcher;
     private SepMetrics sepMetrics;
     private final PayloadExtractor payloadExtractor;
     private String zkNodePath;
     private List<ThreadPoolExecutor> executors;
-    private ServerName serverName;
-    private ZooKeeperWatcher zkWatcher;
     boolean running = false;
     private Log log = LogFactory.getLog(getClass());
 
@@ -99,7 +104,7 @@ public class SepConsumer extends BaseHRegionServer {
      *                 that the RPC will bind to.
      */
     public SepConsumer(String subscriptionId, long subscriptionTimestamp, EventListener listener, int threadCnt,
-            String hostName, ZooKeeperItf zk, Configuration hbaseConf) {
+            String hostName, ZooKeeperItf zk, Configuration hbaseConf) throws IOException, InterruptedException {
         this(subscriptionId, subscriptionTimestamp, listener, threadCnt, hostName, zk, hbaseConf, null);
     }
 
@@ -112,17 +117,39 @@ public class SepConsumer extends BaseHRegionServer {
      * @param payloadExtractor extracts payloads to include in SepEvents
      */
     public SepConsumer(String subscriptionId, long subscriptionTimestamp, EventListener listener, int threadCnt,
-            String hostName, ZooKeeperItf zk, Configuration hbaseConf, PayloadExtractor payloadExtractor) {
+            String hostName, ZooKeeperItf zk, Configuration hbaseConf, PayloadExtractor payloadExtractor) throws IOException, InterruptedException {
         Preconditions.checkArgument(threadCnt > 0, "Thread count must be > 0");
         this.subscriptionId = SepModelImpl.toInternalSubscriptionName(subscriptionId);
         this.subscriptionTimestamp = subscriptionTimestamp;
         this.listener = listener;
-        this.hostName = hostName;
         this.zk = zk;
         this.hbaseConf = hbaseConf;
         this.sepMetrics = new SepMetrics(subscriptionId);
         this.payloadExtractor = payloadExtractor;
         this.executors = Lists.newArrayListWithCapacity(threadCnt);
+
+        InetSocketAddress initialIsa = new InetSocketAddress(hostName, 0);
+        if (initialIsa.getAddress() == null) {
+          throw new IllegalArgumentException("Failed resolve of " + initialIsa);
+        }
+        String name = "regionserver/" + initialIsa.toString();
+        this.rpcServer = new RpcServer(this, name, getServices(),
+        /*HBaseRPCErrorHandler.class, OnlineRegions.class},*/
+          initialIsa, // BindAddress is IP we got for this server.
+          hbaseConf.getInt("hbase.regionserver.handler.count", 10),
+          hbaseConf.getInt("hbase.regionserver.metahandler.count", 10),
+          hbaseConf, HConstants.QOS_THRESHOLD);
+        this.serverName = new ServerName(hostName, rpcServer.getListenerAddress().getPort(), System.currentTimeMillis());
+        this.zkWatcher = new ZooKeeperWatcher(hbaseConf, this.serverName.toString(), null);
+
+        // login the zookeeper client principal (if using security)
+        ZKUtil.loginClient(hbaseConf, "hbase.zookeeper.client.keytab.file",
+                           "hbase.zookeeper.client.kerberos.principal", hostName);
+
+        // login the server principal (if using secure Hadoop)
+        User.login(hbaseConf, "hbase.regionserver.keytab.file",
+                   "hbase.regionserver.kerberos.principal", hostName);
+
         for (int i = 0; i < threadCnt; i++) {
             ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 10, TimeUnit.SECONDS,
                     new ArrayBlockingQueue<Runnable>(100));
@@ -132,43 +159,27 @@ public class SepConsumer extends BaseHRegionServer {
     }
 
     public void start() throws IOException, InterruptedException, KeeperException {
-      InetSocketAddress initialIsa = new InetSocketAddress(hostName, 0);
-      if (initialIsa.getAddress() == null) {
-        throw new IllegalArgumentException("Failed resolve of " + initialIsa);
-      }
-      String name = "regionserver/" + initialIsa.toString();
-      this.rpcServer = new RpcServer(this, name, getServices(),
-      /*HBaseRPCErrorHandler.class, OnlineRegions.class},*/
-          initialIsa, // BindAddress is IP we got for this server.
-          hbaseConf.getInt("hbase.regionserver.handler.count", 10),
-          hbaseConf.getInt("hbase.regionserver.metahandler.count", 10),
-          hbaseConf, HConstants.QOS_THRESHOLD);
 
         rpcServer.start();
 
-        int port = rpcServer.getListenerAddress().getPort();
-
         // Publish our existence in ZooKeeper
-        // See HBase ServerName class: format of server name is: host,port,startcode
-        // Startcode is to distinguish restarted servers on same hostname/port
-        long startCode = System.currentTimeMillis();
-        serverName = new ServerName(hostName, port, startCode);
         zkNodePath = hbaseConf.get(SepModel.ZK_ROOT_NODE_CONF_KEY, SepModel.DEFAULT_ZK_ROOT_NODE)
                 + "/" + subscriptionId + "/rs/" + serverName.getServerName();
         zk.create(zkNodePath, null, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
-        zkWatcher = new ZooKeeperWatcher(hbaseConf, serverName.toString(), null);
+
         this.running = true;
     }
-  private List<RpcServer.BlockingServiceAndInterface> getServices() {
-    List<RpcServer.BlockingServiceAndInterface> bssi = new ArrayList<RpcServer.BlockingServiceAndInterface>(1);
-    bssi.add(new RpcServer.BlockingServiceAndInterface(
-        AdminProtos.AdminService.newReflectiveBlockingService(this),
-        AdminProtos.AdminService.BlockingInterface.class));
-    return bssi;
 
-  }
+    private List<RpcServer.BlockingServiceAndInterface> getServices() {
+      List<RpcServer.BlockingServiceAndInterface> bssi = new ArrayList<RpcServer.BlockingServiceAndInterface>(1);
+      bssi.add(new RpcServer.BlockingServiceAndInterface(
+          AdminProtos.AdminService.newReflectiveBlockingService(this),
+          AdminProtos.AdminService.BlockingInterface.class));
+      return bssi;
+    }
 
     public void stop() {
+        Closer.close(zkWatcher);
         if (running) {
             running = false;
             Closer.close(rpcServer);
@@ -295,7 +306,7 @@ public class SepConsumer extends BaseHRegionServer {
     
     @Override
     public ZooKeeperWatcher getZooKeeper() {
-        return this.zkWatcher;
+        return zkWatcher;
     }
 
 }
