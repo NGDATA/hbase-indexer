@@ -34,6 +34,11 @@
       <groupId>com.ngdata</groupId>
       <artifactId>hbase-indexer-all</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.ngdata</groupId>
+      <artifactId>hbase-indexer-mr</artifactId>
+      <classifier>job</classifier>
+    </dependency>
   </dependencies>
 
   <profiles>
