@@ -37,7 +37,7 @@ class IndexingSpecification {
     
     private final String indexerName;
 
-    private final String configReader;
+    private final String indexerComponentFactory;
 
     private final byte[] configuration;
     
@@ -46,17 +46,17 @@ class IndexingSpecification {
     /**
      * @param tableName name of the HBase table to be indexed
      * @param indexerName name of the indexer being executed
-     * @param indexerConfReader
+     * @param indexerComponentFactory
      * @param indexConnectionParams free-form index connection parameters
      */
-    public IndexingSpecification(String tableName, String indexerName, String indexerConfReader, byte[] configuration, Map<String, String> indexConnectionParams) {
+    public IndexingSpecification(String tableName, String indexerName, String indexerComponentFactory, byte[] configuration, Map<String, String> indexConnectionParams) {
         Preconditions.checkNotNull(tableName);
         Preconditions.checkNotNull(indexerName);
         Preconditions.checkNotNull(configuration);
         Preconditions.checkNotNull(indexConnectionParams);
         this.tableName = tableName;
         this.indexerName = indexerName;
-        this.configReader = indexerConfReader;
+        this.indexerComponentFactory = indexerComponentFactory;
         this.configuration = configuration;
         this.indexConnectionParams = indexConnectionParams;
     }
@@ -76,8 +76,8 @@ class IndexingSpecification {
         return indexerName;
     }
 
-    String getConfigReader() {
-        return configReader;
+    String getIndexerComponentFactory() {
+        return indexerComponentFactory;
     }
 
     /**

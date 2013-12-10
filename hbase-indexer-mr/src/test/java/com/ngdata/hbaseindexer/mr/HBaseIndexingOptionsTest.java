@@ -26,11 +26,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
-import com.ngdata.hbaseindexer.conf.XmlIndexerConfReader;
+import com.ngdata.hbaseindexer.conf.DefaultIndexerComponentFactory;
 import com.ngdata.hbaseindexer.model.api.IndexerDefinition;
 import com.ngdata.hbaseindexer.model.api.IndexerDefinitionBuilder;
 import com.ngdata.hbaseindexer.model.impl.IndexerModelImpl;
@@ -502,7 +501,7 @@ public class HBaseIndexingOptionsTest {
         opts.evaluateIndexingSpecification();
 
         IndexingSpecification expectedSpec = new IndexingSpecification(
-                            "mytable", HBaseIndexingOptions.DEFAULT_INDEXER_NAME, XmlIndexerConfReader.class.getName(),
+                            "mytable", HBaseIndexingOptions.DEFAULT_INDEXER_NAME, DefaultIndexerComponentFactory.class.getName(),
                 Resources.toByteArray(Resources.getResource(getClass(), "user_indexer.xml")), ImmutableMap.of(
                         "solr.zk", "myZkHost/solr",
                         "solr.collection", "mycollection"));
@@ -523,7 +522,7 @@ public class HBaseIndexingOptionsTest {
         opts.evaluateIndexingSpecification();
 
         IndexingSpecification expectedSpec = new IndexingSpecification(
-                            "mytable", HBaseIndexingOptions.DEFAULT_INDEXER_NAME, XmlIndexerConfReader.class.getName(),
+                            "mytable", HBaseIndexingOptions.DEFAULT_INDEXER_NAME, DefaultIndexerComponentFactory.class.getName(),
                 Resources.toByteArray(Resources.getResource(getClass(), "user_indexer.xml")), ImmutableMap.of(
                         "solr.mode", "classic",
                         "solr.home", opts.solrHomeDir.getAbsolutePath()));
@@ -558,7 +557,7 @@ public class HBaseIndexingOptionsTest {
         opts.evaluateIndexingSpecification();
 
         IndexingSpecification expectedSpec = new IndexingSpecification(
-                "record", HBaseIndexingOptions.DEFAULT_INDEXER_NAME, XmlIndexerConfReader.class.getName(),
+                "record", HBaseIndexingOptions.DEFAULT_INDEXER_NAME, DefaultIndexerComponentFactory.class.getName(),
                 Resources.toByteArray(Resources.getResource(getClass(), "user_indexer.xml")), ImmutableMap.of(
                         "solr.zk", "myZkHost/solr",
                         "solr.collection", "mycollection"));

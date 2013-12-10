@@ -24,20 +24,26 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.ngdata.hbaseindexer.ConfigureUtil;
+import com.google.common.collect.Maps;
 import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
+import com.ngdata.hbaseindexer.parse.DefaultResultToSolrMapper;
 import com.ngdata.hbaseindexer.uniquekey.HexUniqueKeyFormatter;
 import org.junit.Test;
 
-public class XmlIndexerConfReaderTest {
+public class DefaultIndexerComponentFactoryTest {
+
+    private static final String impl = DefaultIndexerComponentFactory.class.getName();
+
     @Test
     public void testValid() throws Exception {
-        new XmlIndexerConfReader().read(asStream("<indexer table='foo'/>"));
+        IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(impl, asStream("<indexer table='foo'/>"), Maps.<String, String>newHashMap());
+        factory.createIndexerConf();
     }
 
     @Test(expected = IndexerConfException.class)
     public void testInvalid() throws Exception {
-        new XmlIndexerConfReader().read(asStream("<foo/>"));
+        IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(impl, asStream("<foo/>"), Maps.<String, String>newHashMap());
+        factory.createIndexerConf();
     }
 
     private InputStream asStream(String data) {
@@ -46,7 +52,8 @@ public class XmlIndexerConfReaderTest {
 
     @Test
     public void testFullIndexerConf() throws Exception {
-        IndexerConf conf = new XmlIndexerConfReader().read(getClass().getResourceAsStream("indexerconf_full.xml"));
+        IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(impl, getClass().getResourceAsStream("indexerconf_full.xml"), Maps.<String, String>newHashMap());
+        IndexerConf conf = factory.createIndexerConf();
 
         assertEquals("table1", conf.getTable());
         assertEquals(IndexerConf.MappingType.COLUMN, conf.getMappingType());
@@ -71,13 +78,14 @@ public class XmlIndexerConfReaderTest {
                         ImmutableMap.of("extractKeyA", "extractValueA", "extractKeyB", "extractValueB")));
         assertEquals(expectedExtractDefs, extractDefs);
 
-        assertEquals(ImmutableMap.of("globalKeyA", "globalValueA", "globalKeyB", "globalValueB"), ConfigureUtil.jsonToMap(conf.getGlobalConfig()));
+        assertEquals(ImmutableMap.of("globalKeyA", "globalValueA", "globalKeyB", "globalValueB"), conf.getGlobalParams());
         
     }
 
     @Test
     public void testDefaults() throws Exception {
-        IndexerConf conf = new XmlIndexerConfReader().read(getClass().getResourceAsStream("indexerconf_defaults.xml"));
+        IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(impl, getClass().getResourceAsStream("indexerconf_defaults.xml"), Maps.<String, String>newHashMap());
+        IndexerConf conf = factory.createIndexerConf();
 
         assertEquals("table1", conf.getTable());
         assertEquals(IndexerConf.DEFAULT_MAPPING_TYPE, conf.getMappingType());
@@ -87,7 +95,7 @@ public class XmlIndexerConfReaderTest {
         assertNull(conf.getColumnFamilyField());
         assertNull(conf.getTableNameField());
         assertEquals(IndexerConf.DEFAULT_UNIQUE_KEY_FORMATTER, conf.getUniqueKeyFormatterClass());
-        assertEquals(null, conf.getMapperClass());
+        assertEquals(DefaultResultToSolrMapper.class, conf.getMapperClass());
 
         List<FieldDefinition> fieldDefs = conf.getFieldDefinitions();
         List<FieldDefinition> expectedFieldDefs = Lists.newArrayList(

@@ -25,7 +25,6 @@ import java.util.Map.Entry;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 
-import com.ngdata.hbaseindexer.ConfigureUtil;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
@@ -86,8 +85,8 @@ final class LocalMorphlineResultToSolrMapper implements ResultToSolrMapper, Conf
     }
     
     @Override
-    public void configure(byte[] configBytes) {
-        Map<String, String> params = ConfigureUtil.jsonToMap(configBytes);
+    public void configure(Map<String, String> config) {
+        Map<String, String> params = config;
         if (LOG.isTraceEnabled()) {
             LOG.trace("CWD is {}", new File(".").getAbsolutePath());
             LOG.trace("Configuration:\n{}", Joiner.on("\n").join(new TreeMap(params).entrySet()));

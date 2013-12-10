@@ -91,7 +91,7 @@ public class ListIndexersCli extends BaseIndexCli {
             }
             ps.println("  + Indexer config:");
             printConf(indexer.getConfiguration(), 6, ps, options.has("dump"));
-            ps.println("  + Indexer config reader: " + indexer.getIndexerConfReader());
+            ps.println("  + Indexer component factory: " + indexer.getIndexerComponentFactory());
             ps.println("  + Additional batch index CLI arguments:");
             printArguments(indexer.getBatchIndexCliArguments(), 6, ps, options.has("dump"));
             ps.println("  + Default additional batch index CLI arguments:");

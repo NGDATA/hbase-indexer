@@ -15,12 +15,11 @@
  */
 package com.ngdata.hbaseindexer.conf;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Lists;
-import com.ngdata.hbaseindexer.ConfigureUtil;
+import com.google.common.collect.Maps;
 import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
 import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
 import com.ngdata.hbaseindexer.uniquekey.UniqueKeyFormatter;
@@ -42,7 +41,7 @@ public class IndexerConfBuilder {
     private IndexerConf.MappingType mappingType = IndexerConf.MappingType.ROW;
     private List<FieldDefinition> fieldDefinitions = Lists.newArrayList();
     private List<DocumentExtractDefinition> documentExtractDefinitions = Lists.newArrayList();
-    private byte[] globalParams;
+    private Map<String, String> globalParams;
 
     /**
      * Default constructor.
@@ -68,7 +67,7 @@ public class IndexerConfBuilder {
         this.mappingType = indexerConf.getMappingType();
         this.fieldDefinitions = Lists.newArrayList(indexerConf.getFieldDefinitions());
         this.documentExtractDefinitions = Lists.newArrayList(indexerConf.getDocumentExtractDefinitions());
-        this.globalParams = Arrays.copyOf(indexerConf.getGlobalConfig(), indexerConf.getGlobalConfig().length);
+        this.globalParams = Maps.newHashMap(indexerConf.getGlobalParams());
     }
 
     public IndexerConfBuilder table(String table) {
@@ -116,7 +115,7 @@ public class IndexerConfBuilder {
         return this;
     }
     
-    public IndexerConfBuilder globalParams(byte[] globalParams) {
+    public IndexerConfBuilder globalParams(Map<String, String> globalParams) {
         this.globalParams = globalParams;
         return this;
     }
@@ -151,7 +150,7 @@ public class IndexerConfBuilder {
                 uniqueKeyFormatterClass : IndexerConf.DEFAULT_UNIQUE_KEY_FORMATTER);
         conf.setFieldDefinitions(fieldDefinitions);
         conf.setDocumentExtractDefinitions(documentExtractDefinitions);
-        conf.setGlobalConfig(globalParams);
+        conf.setGlobalParams(globalParams);
         return conf;
     }
 }

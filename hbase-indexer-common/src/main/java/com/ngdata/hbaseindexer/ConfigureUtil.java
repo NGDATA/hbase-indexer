@@ -15,16 +15,7 @@
  */
 package com.ngdata.hbaseindexer;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
-
-import com.google.common.collect.Maps;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ObjectNode;
 
 public class ConfigureUtil {
     
@@ -33,33 +24,10 @@ public class ConfigureUtil {
      * @param obj object to configure
      * @param config configuration parameters
      */
-    public static void configure(Object obj, byte[] config) {
+    public static void configure(Object obj, Map<String, String> config) {
         if (obj instanceof Configurable) {
             ((Configurable)obj).configure(config);
         }
     }
 
-    public static <T extends JsonNode> T deepCopy(T orig) {
-        try {
-            return (T) new ObjectMapper().readTree(orig.traverse());
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    public static byte[] mapToJson(Map<String, String> params) {
-        try {
-            return new ObjectMapper().writeValueAsBytes(params == null ? Collections.EMPTY_MAP : params);
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }
-
-    public static Map<String, String> jsonToMap(byte[] config) {
-        try {
-            return config == null ? Maps.newHashMap() : new ObjectMapper().readValue(config, HashMap.class);
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
-    }
 }

@@ -34,10 +34,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.Maps;
-import com.ngdata.hbaseindexer.ConfigureUtil;
 import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
 import com.ngdata.hbaseindexer.conf.IndexerConf.MappingType;
 import com.ngdata.hbaseindexer.conf.IndexerConf.RowReadMode;
+import com.ngdata.hbaseindexer.indexer.ResultToSolrMapperFactory;
+import com.ngdata.hbaseindexer.parse.DefaultResultToSolrMapper;
 import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
 import com.ngdata.hbaseindexer.uniquekey.UniqueKeyFormatter;
 import org.w3c.dom.Document;
@@ -49,14 +50,26 @@ import org.xml.sax.SAXException;
 /**
  * Constructs an {@link IndexerConf} from an XML file.
  */
-public class XmlIndexerConfReader implements IndexerConfReader {
+public class DefaultIndexerComponentFactory implements IndexerComponentFactory {
+
+    private IndexerConf indexerConf;
+
     @Override
-    public IndexerConf read(InputStream is) throws IndexerConfException {
+    public void configure(InputStream is, Map<String, String> connectionParams) throws IndexerConfException {
         Document document = parse(is);
-        return read(document);
+        indexerConf = read(document);
     }
 
     @Override
+    public IndexerConf createIndexerConf() throws IndexerConfException {
+        return indexerConf;
+    }
+
+    @Override
+    public ResultToSolrMapper createMapper(String indexerName) throws IndexerConfException {
+        return ResultToSolrMapperFactory.createResultToSolrMapper(indexerName, indexerConf);
+    }
+
     public void validate(InputStream is) throws IndexerConfException {
         Document document = parse(is);
         validate(document);
@@ -76,12 +89,13 @@ public class XmlIndexerConfReader implements IndexerConfReader {
         builder.rowField(getAttribute(indexEl, "row-field", false));
         builder.columnFamilyField(getAttribute(indexEl, "column-family-field", false));
         builder.tableNameField(getAttribute(indexEl, "table-name-field", false));
-        builder.globalParams(ConfigureUtil.mapToJson(buildParams(indexEl)));
+        builder.globalParams(buildParams(indexEl));
         
         String mapperClassName = getAttribute(indexEl, "mapper", false);
-        if (mapperClassName != null) {
-            builder.mapperClass(loadClass(mapperClassName, ResultToSolrMapper.class));
+        if (mapperClassName == null) {
+            mapperClassName = DefaultResultToSolrMapper.class.getName();
         }
+        builder.mapperClass(loadClass(mapperClassName, ResultToSolrMapper.class));
 
         String uniqueKeyFormatterName = getAttribute(indexEl, "unique-key-formatter", false);
         if (uniqueKeyFormatterName != null) {

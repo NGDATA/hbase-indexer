@@ -104,7 +104,7 @@ public abstract class Indexer {
         } catch (Exception e) {
             throw new RuntimeException("Problem instantiating the UniqueKeyFormatter.", e);
         }
-        ConfigureUtil.configure(uniqueKeyFormatter, conf.getGlobalConfig());
+        ConfigureUtil.configure(uniqueKeyFormatter, conf.getGlobalParams());
         this.sharder = sharder;
         this.solrWriter = solrWriter;
         this.indexingTimer = Metrics.newTimer(metricName(getClass(),

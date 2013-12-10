@@ -122,9 +122,9 @@ class HBaseIndexerArgumentParser {
                         + "supplied, this overrides --hbase-indexer-zk and --hbase-indexer-name. "
                         + "Example: /path/to/morphline-hbase-mapper.xml");
 
-        Argument hbaseIndexerConfigReaderArg = hbaseIndexerGroup.addArgument("--hbase-indexer-reader")
+        Argument hbaseIndexerComponentFactoryArg = hbaseIndexerGroup.addArgument("--hbase-indexer-component-factory")
                 .metavar("STRING")
-                .help("Classname of the hbase indexer configuration reader.");
+                .help("Classname of the hbase indexer component factory.");
 
         ArgumentGroup scanArgumentGroup = parser.addArgumentGroup("HBase scan parameters")
                 .description("Parameters for specifying what data is included while reading from HBase.");
@@ -500,7 +500,7 @@ class HBaseIndexerArgumentParser {
         opts.collection = ns.getString(collectionArg.getDest());
         opts.clearIndex = ns.getBoolean(clearIndexArg.getDest());
 
-        opts.hbaseIndexerConfigReader = (String) ns.get(hbaseIndexerConfigReaderArg.getDest());
+        opts.hbaseIndexerComponentFactory = (String) ns.get(hbaseIndexerComponentFactoryArg.getDest());
         opts.hbaseIndexerConfigFile = (File) ns.get(hbaseIndexerConfigArg.getDest());
         opts.hbaseIndexerZkHost = ns.getString(indexerZkHostArg.getDest());
         opts.hbaseIndexerName = ns.getString(indexNameArg.getDest());

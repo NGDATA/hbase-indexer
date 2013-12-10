@@ -29,6 +29,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +40,8 @@ import java.util.Set;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.ngdata.hbaseindexer.conf.IndexerConfReaderUtil;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactory;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactoryUtil;
 import com.ngdata.hbaseindexer.indexer.Indexer;
 import com.ngdata.hbaseindexer.indexer.RowData;
 import com.ngdata.hbaseindexer.model.api.IndexerDefinition;
@@ -157,8 +159,8 @@ public class IndexerResource {
     private String fetchIndexerTableName(String indexerName) throws Exception{
         // best effort since this could be a pattern ...
         IndexerDefinition indexerDefinition = get(indexerName);
-        String tableName = IndexerConfReaderUtil.getIndexerConf(indexerDefinition.getIndexerConfReader(),
-                indexerDefinition.getConfiguration()).getTable();
+        IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(indexerDefinition.getIndexerComponentFactory(), new ByteArrayInputStream(indexerDefinition.getConfiguration()), indexerDefinition.getConnectionParams());
+        String tableName = factory.createIndexerConf().getTable();
 
         // TODO we should fail if the table does not exist
         return tableName;
