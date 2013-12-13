@@ -17,7 +17,6 @@ package com.ngdata.hbaseindexer.morphline;
 
 import java.util.Map;
 
-import com.ngdata.hbaseindexer.ConfigureUtil;
 import com.ngdata.hbaseindexer.parse.SolrUpdateWriter;
 
 import org.apache.hadoop.hbase.KeyValue;
@@ -90,7 +89,7 @@ public final class MorphlineResultToSolrMapper implements ResultToSolrMapper, Co
                 throw new IllegalStateException("Can't create a LocalMorphlineToSolrMapper, not yet configured");
             }
             LocalMorphlineResultToSolrMapper localMorphlineMapper = new LocalMorphlineResultToSolrMapper();
-            localMorphlineMapper.configure(ConfigureUtil.mapToJson(params));
+            localMorphlineMapper.configure(params);
             return localMorphlineMapper;
         }
     };
@@ -120,9 +119,9 @@ public final class MorphlineResultToSolrMapper implements ResultToSolrMapper, Co
     }
 
     @Override
-    public void configure(byte[] config) {
+    public void configure(Map<String, String> config) {
         Preconditions.checkNotNull(config);
-        this.params = ConfigureUtil.jsonToMap(config);
+        this.params = config;
         this.localMorphlineMapper.get(); // startup: fail fast on morphline compilation error
     }
 

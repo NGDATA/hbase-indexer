@@ -31,7 +31,7 @@ public class IndexerDefinitionBuilder {
     private IncrementalIndexingState incrementalIndexingState = IncrementalIndexingState.SUBSCRIBE_AND_CONSUME;
     private String subscriptionId;
     private byte[] configuration;
-    private String indexerConfReader;
+    private String indexerComponentFactory;
     private String connectionType;
     private Map<String, String> connectionParams;
     private String[] defaultBatchIndexCliArguments;
@@ -48,7 +48,7 @@ public class IndexerDefinitionBuilder {
         this.incrementalIndexingState = existingDefinition.getIncrementalIndexingState();
         this.subscriptionId = existingDefinition.getSubscriptionId();
         this.configuration = existingDefinition.getConfiguration();
-        this.indexerConfReader = existingDefinition.getIndexerConfReader();
+        this.indexerComponentFactory = existingDefinition.getIndexerComponentFactory();
         this.connectionType = existingDefinition.getConnectionType();
         this.connectionParams = existingDefinition.getConnectionParams();
         this.defaultBatchIndexCliArguments = existingDefinition.getDefaultBatchIndexCliArguments();
@@ -165,10 +165,10 @@ public class IndexerDefinitionBuilder {
     }
 
     /**
-     * @see IndexerDefinition#indexerConfReader
+     * @see IndexerDefinition#indexerComponentFactory
      */
-    public IndexerDefinitionBuilder indexerConfReader(String indexerConfReader) {
-        this.indexerConfReader = indexerConfReader;
+    public IndexerDefinitionBuilder indexerComponentFactory(String indexerComponentFactory) {
+        this.indexerComponentFactory = indexerComponentFactory;
         return this;
     }
 
@@ -187,7 +187,7 @@ public class IndexerDefinitionBuilder {
         Preconditions.checkNotNull(incrementalIndexingState, "incrementalIndexingState");
 
         return new IndexerDefinition(name, lifecycleState, batchIndexingState, incrementalIndexingState, subscriptionId,
-                configuration, indexerConfReader, connectionType, connectionParams, defaultBatchIndexCliArguments,
+                configuration, indexerComponentFactory, connectionType, connectionParams, defaultBatchIndexCliArguments,
                 batchIndexCliArguments, lastBatchBuildInfo, activeBatchBuildInfo, subscriptionTimestamp, occVersion);
     }
 }

@@ -15,10 +15,6 @@
  */
 package com.ngdata.hbaseindexer.cli;
 
-import static com.ngdata.hbaseindexer.model.api.IndexerDefinition.BatchIndexingState;
-import static com.ngdata.hbaseindexer.model.api.IndexerDefinition.IncrementalIndexingState;
-import static com.ngdata.hbaseindexer.model.api.IndexerDefinition.LifecycleState;
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -33,9 +29,9 @@ import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Files;
 import com.ngdata.hbaseindexer.SolrConnectionParams;
+import com.ngdata.hbaseindexer.conf.DefaultIndexerComponentFactory;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactoryUtil;
 import com.ngdata.hbaseindexer.conf.IndexerConfException;
-import com.ngdata.hbaseindexer.conf.IndexerConfReader;
-import com.ngdata.hbaseindexer.conf.XmlIndexerConfReader;
 import com.ngdata.hbaseindexer.model.api.IndexerDefinition;
 import com.ngdata.hbaseindexer.model.api.IndexerDefinitionBuilder;
 import com.ngdata.hbaseindexer.util.IndexerNameValidator;
@@ -49,13 +45,17 @@ import joptsimple.ValueConverter;
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.hbase.util.Pair;
 
+import static com.ngdata.hbaseindexer.model.api.IndexerDefinition.BatchIndexingState;
+import static com.ngdata.hbaseindexer.model.api.IndexerDefinition.IncrementalIndexingState;
+import static com.ngdata.hbaseindexer.model.api.IndexerDefinition.LifecycleState;
+
 /**
  * Base class for the {@link AddIndexerCli} and {@link UpdateIndexerCli}.
  */
 public abstract class AddOrUpdateIndexerCli extends BaseIndexCli {
     protected OptionSpec<String> nameOption;
     protected ArgumentAcceptingOptionSpec<String> indexerConfOption;
-    protected ArgumentAcceptingOptionSpec<String> indexerConfReaderOption;
+    protected ArgumentAcceptingOptionSpec<String> indexerComponentFactoryOption;
     protected OptionSpec<Pair<String, String>> connectionParamOption;
     protected OptionSpec<IndexerDefinition.LifecycleState> lifecycleStateOption;
     protected OptionSpec<IndexerDefinition.IncrementalIndexingState> incrementalIdxStateOption;
@@ -72,10 +72,10 @@ public abstract class AddOrUpdateIndexerCli extends BaseIndexCli {
                 .withRequiredArg().ofType(String.class)
                 .required();
 
-        indexerConfReaderOption = parser
-                .acceptsAll(Lists.newArrayList("r", "indexer-conf-reader"), "Indexer conf reader class")
-                .withRequiredArg().ofType(String.class).describedAs("reader")
-                .defaultsTo(XmlIndexerConfReader.class.getName());
+        indexerComponentFactoryOption = parser
+                .acceptsAll(Lists.newArrayList("r", "indexer-component-factory"), "Indexer component factory class")
+                .withRequiredArg().ofType(String.class).describedAs("factoryclass")
+                .defaultsTo(DefaultIndexerComponentFactory.class.getName());
 
         indexerConfOption = parser
                 .acceptsAll(Lists.newArrayList("c", "indexer-conf"), "Indexer configuration")
@@ -173,10 +173,10 @@ public abstract class AddOrUpdateIndexerCli extends BaseIndexCli {
         if (connectionParams != null)
             builder.connectionParams(connectionParams);
 
-        if (oldIndexerDef == null || oldIndexerDef.getIndexerConfReader() == null)
-            builder.indexerConfReader(indexerConfReaderOption.value(options));
+        if (oldIndexerDef == null || oldIndexerDef.getIndexerComponentFactory() == null)
+            builder.indexerComponentFactory(indexerComponentFactoryOption.value(options));
 
-        byte[] indexerConf = getIndexerConf(options, indexerConfReaderOption, indexerConfOption);
+        byte[] indexerConf = getIndexerConf(options, indexerComponentFactoryOption, indexerConfOption, connectionParams);
         if (indexerConf != null)
             builder.configuration(indexerConf);
 
@@ -201,21 +201,9 @@ public abstract class AddOrUpdateIndexerCli extends BaseIndexCli {
         return builder;
     }
 
-    protected byte[] getIndexerConf(OptionSet options, OptionSpec<String> readerOption, OptionSpec<String> configOption)
+    protected byte[] getIndexerConf(OptionSet options, OptionSpec<String> readerOption, OptionSpec<String> configOption, Map<String, String> connectionParams)
             throws IOException {
-        String readerClassName = readerOption.value(options);
-        IndexerConfReader reader;
-        try {
-            reader = (IndexerConfReader) Class.forName(readerClassName).newInstance();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("The supplied reader class could not be found: " + readerClassName, e);
-        } catch (InstantiationException e) {
-            throw new RuntimeException("Could not create reader class", e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Could not create reader class", e);
-        } catch (ClassCastException e) {
-            throw new RuntimeException("Class does not implement IndexerConfReader: " + readerClassName, e);
-        }
+        String componentFactory = readerOption.value(options);
 
         String fileName = configOption.value(options);
         byte[] data = null;
@@ -231,12 +219,8 @@ public abstract class AddOrUpdateIndexerCli extends BaseIndexCli {
             data = ByteStreams.toByteArray(Files.newInputStreamSupplier(file).getInput());
         }
 
-        if (data == null) {
-            return null;
-        }
-
         try {
-            reader.validate(new ByteArrayInputStream(data));
+            IndexerComponentFactoryUtil.getComponentFactory(componentFactory, new ByteArrayInputStream(data), connectionParams);
         } catch (IndexerConfException e) {
             StringBuilder msg = new StringBuilder();
             msg.append("Failed to parse configuration ").append(fileName).append('\n');

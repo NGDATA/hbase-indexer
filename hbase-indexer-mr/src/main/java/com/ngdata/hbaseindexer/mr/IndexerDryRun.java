@@ -15,6 +15,7 @@
  */
 package com.ngdata.hbaseindexer.mr;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -23,11 +24,12 @@ import java.util.Map;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
-import com.ngdata.hbaseindexer.ConfigureUtil;
+import com.google.common.collect.Maps;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactory;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactoryUtil;
 import com.ngdata.hbaseindexer.conf.IndexerConf;
 import com.ngdata.hbaseindexer.conf.IndexerConf.RowReadMode;
 import com.ngdata.hbaseindexer.conf.IndexerConfBuilder;
-import com.ngdata.hbaseindexer.conf.IndexerConfReaderUtil;
 import com.ngdata.hbaseindexer.indexer.Indexer;
 import com.ngdata.hbaseindexer.indexer.ResultToSolrMapperFactory;
 import com.ngdata.hbaseindexer.indexer.ResultWrappingRowData;
@@ -84,14 +86,15 @@ class IndexerDryRun {
         long programStartTime = System.currentTimeMillis();
         IndexingSpecification indexingSpec = indexingOpts.getIndexingSpecification();
 
-        IndexerConf indexerConf = IndexerConfReaderUtil.getIndexerConf(indexingSpec.getConfigReader(), indexingSpec.getConfiguration());
+        IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(indexingSpec.getIndexerComponentFactory(), new ByteArrayInputStream(indexingSpec.getConfiguration()), Maps.<String, String>newHashMap());
+        IndexerConf indexerConf = factory.createIndexerConf();
 
         if (indexerConf.getRowReadMode() != RowReadMode.NEVER) {
             LOG.warn("Changing row read mode from " + indexerConf.getRowReadMode() + " to " + RowReadMode.NEVER);
             indexerConf = new IndexerConfBuilder(indexerConf).rowReadMode(RowReadMode.NEVER).build();
         }
 
-        Map<String, String> params = ConfigureUtil.jsonToMap(indexerConf.getGlobalConfig());
+        Map<String, String> params = indexerConf.getGlobalParams();
         if (indexingOpts.morphlineFile != null) {
             params.put(MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, indexingOpts.morphlineFile.getPath());
         }
@@ -108,13 +111,11 @@ class IndexerDryRun {
             }
         }
 
-        indexerConf.setGlobalConfig(ConfigureUtil.mapToJson(params));
-
         MorphlineClasspathUtil.setupJavaCompilerClasspath();
         
         ResultToSolrMapper resultToSolrMapper = ResultToSolrMapperFactory.createResultToSolrMapper(
-                                                        indexingSpec.getIndexerName(),
-                                                        indexerConf);
+                indexingSpec.getIndexerName(),
+                indexerConf);
         
         Indexer indexer = Indexer.createIndexer(
                                 indexingSpec.getIndexerName(),

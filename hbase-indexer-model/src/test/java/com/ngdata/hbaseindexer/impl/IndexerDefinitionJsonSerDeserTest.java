@@ -53,7 +53,7 @@ public class IndexerDefinitionJsonSerDeserTest {
                 .lifecycleState(LifecycleState.DELETE_REQUESTED)
                 .batchIndexingState(BatchIndexingState.BUILDING)
                 .incrementalIndexingState(IncrementalIndexingState.SUBSCRIBE_DO_NOT_CONSUME)
-                .indexerConfReader("testReader")
+                .indexerComponentFactory("testReader")
                 .configuration("config1".getBytes())
                 .connectionType("solr")
                 .connectionParams(ImmutableMap.of("p1", "v1", "p2", "v2"))
@@ -76,7 +76,7 @@ public class IndexerDefinitionJsonSerDeserTest {
         assertEquals(LifecycleState.DELETE_REQUESTED, indexer2.getLifecycleState());
         assertEquals(BatchIndexingState.BUILDING, indexer2.getBatchIndexingState());
         assertEquals(IncrementalIndexingState.SUBSCRIBE_DO_NOT_CONSUME, indexer2.getIncrementalIndexingState());
-        assertEquals("testReader", indexer2.getIndexerConfReader());
+        assertEquals("testReader", indexer2.getIndexerComponentFactory());
         assertArrayEquals("config1".getBytes(), indexer2.getConfiguration());
         assertEquals("solr", indexer.getConnectionType());
         assertEquals("v1", indexer.getConnectionParams().get("p1"));

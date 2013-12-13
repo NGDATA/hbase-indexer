@@ -40,16 +40,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactory;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactoryUtil;
 import com.ngdata.hbaseindexer.conf.IndexerConf;
-import com.ngdata.hbaseindexer.conf.XmlIndexerConfReader;
 import com.ngdata.hbaseindexer.indexer.DirectSolrClassicInputDocumentWriter;
 import com.ngdata.hbaseindexer.indexer.DirectSolrInputDocumentWriter;
-import com.ngdata.hbaseindexer.conf.IndexerConfReader;
-import com.ngdata.hbaseindexer.conf.IndexerConfReaderUtil;
-import com.ngdata.hbaseindexer.indexer.HashSharder;
 import com.ngdata.hbaseindexer.indexer.Indexer;
 import com.ngdata.hbaseindexer.indexer.IndexingEventListener;
-import com.ngdata.hbaseindexer.indexer.ResultToSolrMapperFactory;
 import com.ngdata.hbaseindexer.indexer.Sharder;
 import com.ngdata.hbaseindexer.indexer.SolrInputDocumentWriter;
 import com.ngdata.hbaseindexer.model.api.IndexerDefinition;
@@ -73,10 +70,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.zookeeper.KeeperException;
-
-import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_ADDED;
-import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_DELETED;
-import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_UPDATED;
 
 /**
  * Responsible for starting, stopping and restarting {@link Indexer}s for the indexers defined in the
@@ -201,10 +194,10 @@ public class IndexerSupervisor {
             indexerProcessIds.put(indexerDef.getName(), indexerProcessId);
 
             // Create and register the indexer
-            IndexerConf indexerConf = IndexerConfReaderUtil.getIndexerConf(indexerDef.getIndexerConfReader(), indexerDef.getConfiguration());
+            IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(indexerDef.getIndexerComponentFactory(), new ByteArrayInputStream(indexerDef.getConfiguration()), indexerDef.getConnectionParams());
+            IndexerConf indexerConf = factory.createIndexerConf();
 
-            ResultToSolrMapper mapper = ResultToSolrMapperFactory.createResultToSolrMapper(
-                    indexerDef.getName(), indexerConf);
+            ResultToSolrMapper mapper = factory.createMapper(indexerDef.getName());
 
             Sharder sharder = null;
             SolrInputDocumentWriter solrWriter;
@@ -403,7 +396,7 @@ public class IndexerSupervisor {
                     }
 
                     IndexerModelEvent event = eventQueue.take();
-                    log.debug(event.toString());
+                    log.debug("Took event from queue: " + event.toString());
                     if (event.getType() == INDEXER_ADDED || event.getType() == INDEXER_UPDATED) {
                         try {
                             IndexerDefinition indexerDef = indexerModel.getIndexer(event.getIndexerName());

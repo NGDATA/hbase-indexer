@@ -16,17 +16,13 @@
 package com.ngdata.hbaseindexer.conf;
 
 import com.google.common.collect.Maps;
-import com.ngdata.hbaseindexer.ConfigureUtil;
 import com.ngdata.hbaseindexer.parse.DefaultResultToSolrMapper;
 import com.ngdata.hbaseindexer.uniquekey.StringUniqueKeyFormatter;
 import junit.framework.Assert;
 import org.apache.commons.io.IOUtils;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.node.ObjectNode;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
 import java.util.Map;
 
 public class XmlIndexerConfWriterTest {
@@ -38,11 +34,11 @@ public class XmlIndexerConfWriterTest {
                 .table("the-table")
                 .mappingType(IndexerConf.MappingType.COLUMN)
                 .rowReadMode(IndexerConf.RowReadMode.DYNAMIC)
-                .uniqueyKeyField("kyefield")
+                .uniqueyKeyField("keyfield")
                 .rowField("rf")
                 .columnFamilyField("cf-field")
                 .tableNameField("tn-field")
-                .globalParams(ConfigureUtil.mapToJson(params))
+                .globalParams(params)
                 .mapperClass(DefaultResultToSolrMapper.class)
                 .uniqueKeyFormatterClass(StringUniqueKeyFormatter.class)
                 .addFieldDefinition("fieldname", "fieldvalue", FieldDefinition.ValueSource.VALUE, "fieldtype", params)
@@ -54,14 +50,14 @@ public class XmlIndexerConfWriterTest {
 
         String xmlString = os.toString();
 
-        XmlIndexerConfReader reader = new XmlIndexerConfReader();
+        IndexerConf conf2 = null;
         try {
-            reader.validate(IOUtils.toInputStream(xmlString));
+            IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(DefaultIndexerComponentFactory.class.getName(), IOUtils.toInputStream(xmlString), Maps.<String, String>newHashMap());
+            conf2 = factory.createIndexerConf();
         } catch (Exception e) {
             e.printStackTrace();
             Assert.fail("Xml is not valid");
         }
-        IndexerConf conf2 = reader.read(IOUtils.toInputStream(xmlString));
 
         Assert.assertEquals(conf.getTable(),conf2.getTable());
         Assert.assertEquals(conf.getMappingType(),conf2.getMappingType());
@@ -70,7 +66,7 @@ public class XmlIndexerConfWriterTest {
         Assert.assertEquals(conf.getRowField(),conf2.getRowField());
         Assert.assertEquals(conf.getColumnFamilyField(),conf2.getColumnFamilyField());
         Assert.assertEquals(conf.getTableNameField(),conf2.getTableNameField());
-        Assert.assertTrue(Arrays.equals(conf.getGlobalConfig(), conf2.getGlobalConfig()));
+        Assert.assertEquals(conf.getGlobalParams(), conf2.getGlobalParams());
         Assert.assertEquals(conf.getMapperClass(),conf2.getMapperClass());
         Assert.assertEquals(conf.getUniqueKeyFormatterClass(),conf2.getUniqueKeyFormatterClass());
         Assert.assertEquals(conf.getFieldDefinitions().size(),conf2.getFieldDefinitions().size());

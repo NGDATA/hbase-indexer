@@ -26,7 +26,7 @@ import java.util.Map.Entry;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.ngdata.hbaseindexer.conf.XmlIndexerConfReader;
+import com.ngdata.hbaseindexer.conf.DefaultIndexerComponentFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -108,7 +108,7 @@ public class HBaseMapReduceIndexerToolDirectWriteTest {
         INDEXER_MODEL = new IndexerModelImpl(zkItf, "/ngdata/hbaseindexer");
         IndexerDefinition indexerDef = new IndexerDefinitionBuilder()
         .name("zkindexerdef")
-        .indexerConfReader(XmlIndexerConfReader.class.getName())
+        .indexerComponentFactory(DefaultIndexerComponentFactory.class.getName())
         .configuration(Resources.toByteArray(Resources.getResource(
                 HBaseMapReduceIndexerToolDirectWriteTest.class, "user_indexer.xml")))
         .connectionParams(ImmutableMap.of(

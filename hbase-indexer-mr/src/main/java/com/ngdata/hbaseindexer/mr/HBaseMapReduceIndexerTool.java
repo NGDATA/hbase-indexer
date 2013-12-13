@@ -29,14 +29,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.Maps;
 import com.ngdata.hbaseindexer.SolrConnectionParams;
-import java.io.File;
-import java.util.Map;
 
 import com.google.common.base.Charsets;
-import com.ngdata.hbaseindexer.ConfigureUtil;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactory;
+import com.ngdata.hbaseindexer.conf.IndexerComponentFactoryUtil;
 import com.ngdata.hbaseindexer.conf.IndexerConf;
-import com.ngdata.hbaseindexer.conf.IndexerConfReaderUtil;
 import com.ngdata.hbaseindexer.morphline.MorphlineResultToSolrMapper;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
@@ -99,15 +98,16 @@ public class HBaseMapReduceIndexerTool extends Configured implements Tool {
 
         IndexingSpecification indexingSpec = hbaseIndexingOpts.getIndexingSpecification();
 
-        conf.set(HBaseIndexerMapper.INDEX_CONFIGURATION_CONF_READER_KEY, indexingSpec.getConfigReader());
+        conf.set(HBaseIndexerMapper.INDEX_COMPONENT_FACTORY_KEY, indexingSpec.getIndexerComponentFactory());
         conf.set(HBaseIndexerMapper.INDEX_CONFIGURATION_CONF_KEY, new String(indexingSpec.getConfiguration(), Charsets.UTF_8));
         conf.set(HBaseIndexerMapper.INDEX_NAME_CONF_KEY, indexingSpec.getIndexerName());
         conf.set(HBaseIndexerMapper.TABLE_NAME_CONF_KEY, indexingSpec.getTableName());
         HBaseIndexerMapper.configureIndexConnectionParams(conf, indexingSpec.getIndexConnectionParams());
 
-        IndexerConf indexerConf = IndexerConfReaderUtil.getIndexerConf(indexingSpec.getConfigReader(), indexingSpec.getConfiguration());
+        IndexerComponentFactory factory = IndexerComponentFactoryUtil.getComponentFactory(indexingSpec.getIndexerComponentFactory(), new ByteArrayInputStream(indexingSpec.getConfiguration()), indexingSpec.getIndexConnectionParams());
+        IndexerConf indexerConf = factory.createIndexerConf();
 
-        Map<String, String> params = ConfigureUtil.jsonToMap(indexerConf.getGlobalConfig());
+        Map<String, String> params = indexerConf.getGlobalParams();
         String morphlineFile = params.get(MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM);
         if (hbaseIndexingOpts.morphlineFile != null) {
             morphlineFile = hbaseIndexingOpts.morphlineFile.getPath();

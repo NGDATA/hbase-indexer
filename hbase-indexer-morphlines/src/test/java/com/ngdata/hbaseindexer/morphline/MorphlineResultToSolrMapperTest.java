@@ -34,7 +34,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import com.ngdata.hbaseindexer.ConfigureUtil;
 import com.ngdata.hbaseindexer.conf.FieldDefinition;
 import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
 import com.ngdata.hbaseindexer.parse.SolrUpdateWriter;
@@ -69,9 +68,9 @@ public class MorphlineResultToSolrMapperTest {
     @Test
     public void testMap() throws Exception {
         MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();
-        resultMapper.configure(ConfigureUtil.mapToJson(ImmutableMap.of(
+        resultMapper.configure(ImmutableMap.of(
             MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCells.conf")
-            ));
+            );
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
@@ -89,9 +88,8 @@ public class MorphlineResultToSolrMapperTest {
     @Test
     public void testMapWithMultipleOutputFields() throws Exception {
         MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();
-        resultMapper.configure(ConfigureUtil.mapToJson(ImmutableMap.of(
-                MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCellsWithMultipleOutputFields.conf"))
-            );
+        resultMapper.configure(ImmutableMap.of(
+                MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCellsWithMultipleOutputFields.conf"));
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvX = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_A, "Basti".getBytes("UTF-8"));
@@ -111,9 +109,9 @@ public class MorphlineResultToSolrMapperTest {
     @Test
     public void testMapWithDynamicOutputField() throws Exception {
         MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();
-        resultMapper.configure(ConfigureUtil.mapToJson(ImmutableMap.of(
+        resultMapper.configure(ImmutableMap.of(
             MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCellsWithDynamicOutputField.conf")
-            ));
+            );
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
@@ -228,10 +226,10 @@ public class MorphlineResultToSolrMapperTest {
 
     private MorphlineResultToSolrMapper createMorphlineMapper(FieldDefinition fieldDef) {
       MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();
-      resultMapper.configure(ConfigureUtil.mapToJson(makeMap(
+      resultMapper.configure(makeMap(
           ImmutableMap.of(MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCellsWithVariables.conf"),
           toVariables(fieldDef)
-          )));
+          ));
       return resultMapper;
     }
 

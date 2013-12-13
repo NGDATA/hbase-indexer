@@ -15,6 +15,8 @@
  */
 package com.ngdata.hbaseindexer;
 
+import java.util.Map;
+
 /**
  * An object that can be configured with a map of parameters taken from a configuration file.
  */
@@ -25,5 +27,5 @@ public interface Configurable {
      *
      * @param config configuration parameters
      */
-    void configure(byte[] config);
+    void configure(Map<String, String> config);
 }

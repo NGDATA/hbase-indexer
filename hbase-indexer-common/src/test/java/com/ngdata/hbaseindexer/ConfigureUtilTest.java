@@ -28,10 +28,10 @@ public class ConfigureUtilTest {
     
     static class ConfigurableObject implements Configurable {
 
-        byte[] params;
+        Map<String, String> params;
         
         @Override
-        public void configure(byte[] config) {
+        public void configure(Map<String, String> config) {
             this.params = config;
         }
         
@@ -43,9 +43,9 @@ public class ConfigureUtilTest {
         Map<String, String> params = Maps.newHashMap();
         params.put("key", "value");
 
-        ConfigureUtil.configure(configurable, ConfigureUtil.mapToJson(params));
+        ConfigureUtil.configure(configurable, params);
         
-        assertEquals(params, ConfigureUtil.jsonToMap(configurable.params));
+        assertEquals(params, configurable.params);
     }
     
     
@@ -55,7 +55,7 @@ public class ConfigureUtilTest {
         Map<String, String> params = Maps.newHashMap();
         params.put("key", "value");
         
-        ConfigureUtil.configure(o, ConfigureUtil.mapToJson(params));
+        ConfigureUtil.configure(o, params);
         
         // Nothing to check
     }
