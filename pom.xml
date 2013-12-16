@@ -463,6 +463,11 @@
             <artifactId>hadoop-core</artifactId>
             <version>${version.hadoop.mr1}</version>
           </dependency>
+          <dependency>
+            <groupId>org.kohsuke</groupId>
+            <artifactId>akuma</artifactId>
+            <version>1.9</version>
+          </dependency>
         </dependencies>
       </dependencyManagement>
 

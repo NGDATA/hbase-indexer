@@ -15,8 +15,6 @@
  */
 package com.ngdata.hbaseindexer;
 
-import java.util.concurrent.TimeUnit;
-
 import com.ngdata.hbaseindexer.master.IndexerMaster;
 import com.ngdata.hbaseindexer.model.api.IndexerProcessRegistry;
 import com.ngdata.hbaseindexer.model.api.WriteableIndexerModel;
@@ -28,6 +26,7 @@ import com.ngdata.hbaseindexer.util.zookeeper.StateWatchingZooKeeper;
 import com.ngdata.sep.SepModel;
 import com.ngdata.sep.impl.SepModelImpl;
 import com.ngdata.sep.util.io.Closer;
+import com.sun.akuma.Daemon;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.spi.container.servlet.ServletContainer;
 import com.yammer.metrics.reporting.GangliaReporter;
@@ -43,8 +42,10 @@ import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.ServletHolder;
 
+import java.util.concurrent.TimeUnit;
+
 public class Main {
-    private Log log = LogFactory.getLog(getClass());
+    private final static Log log = LogFactory.getLog(Main.class);
     private HTablePool tablePool;
     private WriteableIndexerModel indexerModel;
     private SepModel sepModel;
@@ -53,18 +54,45 @@ public class Main {
     private StateWatchingZooKeeper zk;
     private Server server;
 
-    public static void main(String[] args) throws Exception {
-        new Main().run(args);
+    public static void main(String[] args) {
+        Daemon d = new Daemon() {
+            @Override
+            public void init() throws Exception {
+                init("/var/run/hbase-indexer.pid");
+            }
+        };
+        try {
+        if(d.isDaemonized()) {
+            // perform initialization as a daemon
+            // this involves in closing file descriptors, recording PIDs, etc.
+            d.init();
+        } else {
+            // if you are already daemonized, no point in daemonizing yourself again,
+            // so do this only when you aren't daemonizing.
+            if(args != null && args.length > 0 && "daemon".equals(args[0])) {
+                d.daemonize();
+                System.exit(0);
+            }
+        }
+        } catch (Exception e) {
+            log.error("Error setting up hbase-indexer daemon", e);
+            System.exit(1);
+        }
+
+        try {
+            new Main().run(args);
+        } catch (Exception e) {
+            log.error(e);
+            System.exit(1);
+        }
     }
 
     public void run(String[] args) throws Exception {
-        Configuration conf = HBaseIndexerConfiguration.create();
-
-        setupMetrics(conf);
-
-        startServices(conf);
-
         Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHandler()));
+
+        Configuration conf = HBaseIndexerConfiguration.create();
+        setupMetrics(conf);
+        startServices(conf);
     }
 
     /**
@@ -104,7 +132,7 @@ public class Main {
 
     }
 
-    private void startHttpServer() {
+    private void startHttpServer() throws Exception {
         server = new Server();
         SelectChannelConnector selectChannelConnector = new SelectChannelConnector();
         selectChannelConnector.setPort(11060);
@@ -123,12 +151,7 @@ public class Main {
         context.setAttribute("indexerSupervisor", indexerSupervisor);
 
         server.setHandler(context);
-
-        try {
-            server.start();
-        } catch (Exception e) {
-            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        server.start();
     }
 
     private void setupMetrics(Configuration conf) {

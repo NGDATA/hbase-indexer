@@ -32,7 +32,7 @@
 #
 #   JAVA_HOME                   The java implementation to use. Overrides JAVA_HOME.
 #
-#   HBASE_INDEXER_CLASSPATH     Extra Java CLASSPATH entries.
+#   Extra Java CLASSPATH entries.
 #
 #   HBASE_INDEXER_HEAPSIZE      The maximum amount of heap to use, in MB.
 #                               Default is 1000.
@@ -254,6 +254,8 @@ fi
 # figure out which class to run
 if [ "$COMMAND" = "server" ] ; then
   CLASS='com.ngdata.hbaseindexer.Main'
+elif [ "$COMMAND" = "daemon" ] ; then
+  CLASS='com.ngdata.hbaseindexer.Main daemon'
 elif [ "$COMMAND" = "add-indexer" ] ; then
   CLASS='com.ngdata.hbaseindexer.cli.AddIndexerCli'
 elif [ "$COMMAND" = "update-indexer" ] ; then
@@ -292,9 +294,11 @@ if [ "x$JAVA_LIBRARY_PATH" != "x" ]; then
   export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$JAVA_LIBRARY_PATH"
 fi
 
+# Exporting classpath since passing the classpath with -cp seems to choke daemon mode
+export CLASSPATH
 # Exec unless HBASE_INDEXER_NOEXEC is set.
 if [ "${HBASE_INDEXER_NOEXEC}" != "" ]; then
-  "$JAVA" -Dproc_$COMMAND {-XX:OnOutOfMemoryError="kill -9 %p" $JAVA_HEAP_MAX $HBASE_INDEXER_OPTS -classpath "$CLASSPATH" $CLASS "$@"
+  "$JAVA" -Dproc_$COMMAND {-XX:OnOutOfMemoryError="kill -9 %p" $JAVA_HEAP_MAX $HBASE_INDEXER_OPTS $CLASS "$@"
 else
-  exec "$JAVA" -Dproc_$COMMAND -XX:OnOutOfMemoryError="kill -9 %p" $JAVA_HEAP_MAX $HBASE_INDEXER_OPTS -classpath "$CLASSPATH" $CLASS "$@"
+  exec "$JAVA" -Dproc_$COMMAND -XX:OnOutOfMemoryError="kill -9 %p" $JAVA_HEAP_MAX $HBASE_INDEXER_OPTS $CLASS "$@"
 fi
