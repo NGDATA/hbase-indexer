@@ -198,7 +198,7 @@ public class JsonUtil {
         List<String> elements = new ArrayList<String>();
         Iterator<JsonNode> elementItr = arrayNode.getElements();
         while (elementItr.hasNext()) {
-            elements.add(elementItr.next().asText());
+            elements.add(elementItr.next().getValueAsText());
         }
         return elements;
     }

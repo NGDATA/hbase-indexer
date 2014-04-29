@@ -242,7 +242,12 @@ public class IndexerDefinitionJsonSerDeser {
 
     private void setBatchBuildInfo(BatchBuildInfo buildInfo, ObjectNode batchNode) {
         batchNode.put("submitTime", buildInfo.getSubmitTime());
-        batchNode.put("finishedSuccessful", buildInfo.isFinishedSuccessful());
+        Boolean isFinishedSuccessful = buildInfo.isFinishedSuccessful();
+        if (isFinishedSuccessful == null) {
+            batchNode.put("finishedSuccessful", batchNode.nullNode());
+        } else {
+            batchNode.put("finishedSuccessful", isFinishedSuccessful);          
+        }
         ObjectNode jobs = batchNode.putObject("mapReduceJobTrackingUrls");
         for (Map.Entry<String, String> entry : buildInfo.getMapReduceJobTrackingUrls().entrySet()) {
             jobs.put(entry.getKey(), entry.getValue());

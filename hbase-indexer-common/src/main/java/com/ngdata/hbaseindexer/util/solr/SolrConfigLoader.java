@@ -58,7 +58,7 @@ public class SolrConfigLoader extends SolrResourceLoader {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonParser jsonParser = objectMapper.getJsonFactory().createJsonParser(data);
             JsonNode collectionNode = objectMapper.readTree(jsonParser);
-            return ZkController.CONFIGS_ZKNODE + "/" + collectionNode.get(ZkController.CONFIGNAME_PROP).asText();
+            return ZkController.CONFIGS_ZKNODE + "/" + collectionNode.get(ZkController.CONFIGNAME_PROP).getValueAsText();
         } catch (Exception e) {
             // TODO Better exception handling here
             throw new RuntimeException(e);

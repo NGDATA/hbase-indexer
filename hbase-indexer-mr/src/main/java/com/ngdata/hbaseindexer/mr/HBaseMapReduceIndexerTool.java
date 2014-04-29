@@ -143,7 +143,7 @@ public class HBaseMapReduceIndexerTool extends Configured implements Tool {
         Job job = Job.getInstance(getConf());
         job.setJobName(getClass().getSimpleName() + "/" + HBaseIndexerMapper.class.getSimpleName());
         job.setJarByClass(HBaseIndexerMapper.class);
-        job.setUserClassesTakesPrecedence(true);
+//        job.setUserClassesTakesPrecedence(true);
 
         TableMapReduceUtil.initTableMapperJob(
                 hbaseIndexingOpts.getScans(),
