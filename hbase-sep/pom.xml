@@ -61,6 +61,20 @@
         <module>hbase-sep-impl-0.95</module>
       </modules>
     </profile>
+    
+    <profile>
+      <id>0.98</id>
+      <activation>
+        <property>
+          <name>hbase.api</name>
+          <value>0.98</value>
+        </property>
+      </activation>
+
+      <modules>
+        <module>hbase-sep-impl-0.98</module>
+      </modules>
+    </profile>
   </profiles>
 
   <build>

@@ -110,6 +110,10 @@
       <classifier>tests</classifier>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.sun.jersey</groupId>
+      <artifactId>jersey-servlet</artifactId>
+    </dependency>    
   </dependencies>
 
   <profiles>
@@ -175,6 +179,45 @@
           <type>test-jar</type>
           <scope>test</scope>
           <version>${version.hbase95}</version>
+        </dependency>
+      </dependencies>  
+    </profile>
+    
+    <profile>
+      <id>0.98</id>
+      <activation>
+        <property>
+          <name>hbase.api</name>
+          <value>0.98</value>
+        </property>
+      </activation>
+
+      <properties>
+        <log4j.properties.file>log4j-0.98.properties</log4j.properties.file>
+      </properties>
+
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-server</artifactId>
+          <type>test-jar</type>
+          <scope>test</scope>
+          <version>${version.hbase98}</version>
+        </dependency>
+
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-hadoop2-compat</artifactId>
+          <type>test-jar</type>
+          <scope>test</scope>
+          <version>${version.hbase98}</version>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.hbase</groupId>
+          <artifactId>hbase-hadoop-compat</artifactId>
+          <type>test-jar</type>
+          <scope>test</scope>
+          <version>${version.hbase98}</version>
         </dependency>
       </dependencies>  
     </profile>
