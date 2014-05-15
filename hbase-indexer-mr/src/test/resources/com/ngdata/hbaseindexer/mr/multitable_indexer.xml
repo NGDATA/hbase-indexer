@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 -->
-<indexer table="_multitable_.*">
+<indexer table="regex:_multitable_.*">
   <field name="firstname_s" value="info:firstname"/>
   <field name="lastname_s" value="info:lastname"/>
   <field name="age_i" value="info:age" type="int"/>
