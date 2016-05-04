@@ -26,7 +26,10 @@ public interface SepModel {
 
     /** Configuration key for storing the path of the root ZooKeeper node. */
     public static final String ZK_ROOT_NODE_CONF_KEY = "hbasesep.zookeeper.znode.parent";
-    
+
+    /** Configuration key for the batch size of SepEventExecutor. */
+    public static final String EVENT_EXECUTOR_BATCH_SIZE_CONF_KEY = "hbasesep.event.executor.batch.size";
+
     /** Default root ZooKeeper node */
     public static final String DEFAULT_ZK_ROOT_NODE = "/ngdata/sep/hbase-slave";
 

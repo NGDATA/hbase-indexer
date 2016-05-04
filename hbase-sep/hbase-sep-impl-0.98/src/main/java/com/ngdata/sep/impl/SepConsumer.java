@@ -213,7 +213,8 @@ public class SepConsumer extends BaseHRegionServer {
         // TODO Recording of last processed timestamp won't work if two batches of log entries are sent out of order
         long lastProcessedTimestamp = -1;
 
-        SepEventExecutor eventExecutor = new SepEventExecutor(listener, executors, 100, sepMetrics);
+        SepEventExecutor eventExecutor = new SepEventExecutor(listener, executors,
+            hbaseConf.getInt(SepModel.EVENT_EXECUTOR_BATCH_SIZE_CONF_KEY, 100), sepMetrics);
 
         List<AdminProtos.WALEntry> entries = request.getEntryList();
         CellScanner cells = ((PayloadCarryingRpcController)controller).cellScanner();
