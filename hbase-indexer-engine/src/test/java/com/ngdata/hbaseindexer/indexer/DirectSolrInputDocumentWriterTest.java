@@ -28,7 +28,7 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -38,12 +38,12 @@ import org.junit.Test;
 
 public class DirectSolrInputDocumentWriterTest {
 
-    private SolrServer solrServer;
+    private SolrClient solrServer;
     private DirectSolrInputDocumentWriter solrWriter;
 
     @Before
     public void setUp() {
-        solrServer = mock(SolrServer.class);
+        solrServer = mock(SolrClient.class);
         solrWriter = new DirectSolrInputDocumentWriter("index name", solrServer);
     }
 

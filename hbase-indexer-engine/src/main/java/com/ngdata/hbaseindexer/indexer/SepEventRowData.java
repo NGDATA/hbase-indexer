@@ -15,15 +15,14 @@
  */
 package com.ngdata.hbaseindexer.indexer;
 
-import static com.ngdata.sep.impl.HBaseShims.newResult;
+import com.google.common.collect.Lists;
+import com.ngdata.sep.SepEvent;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Result;
 
 import java.util.Collections;
 import java.util.List;
-
-import com.google.common.collect.Lists;
-import com.ngdata.sep.SepEvent;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.Result;
 
 /**
  * {@code RowData} implementation that wraps an incoming SepEvent for
@@ -63,14 +62,14 @@ public class SepEventRowData implements RowData {
         List<KeyValue> filteredKeyValues = Lists.newArrayListWithCapacity(sepEvent.getKeyValues().size());
         
         for (KeyValue kv : getKeyValues()) {
-            if (!kv.isDelete() && !kv.isDeleteFamily()) {
+            if (!CellUtil.isDelete(kv) && !CellUtil.isDeleteFamily(kv)) {
                 filteredKeyValues.add(kv);
             }
         }
 
         // A Result object requires that the KeyValues are sorted (e.g., it does binary search on them)
         Collections.sort(filteredKeyValues, KeyValue.COMPARATOR);
-        return newResult(filteredKeyValues);
+        return new Result(filteredKeyValues);
     }
 
 }

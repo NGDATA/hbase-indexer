@@ -15,11 +15,8 @@
  */
 package com.ngdata.hbaseindexer.mr;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-import java.util.Map.Entry;
-
+import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
@@ -29,13 +26,14 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.solr.hadoop.ForkedTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Resources;
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class HBaseMapReduceIndexerToolTest {
 
@@ -113,7 +111,7 @@ public class HBaseMapReduceIndexerToolTest {
             "--shards", "1",
             "--overwrite-output-dir");
         
-        ForkedTestUtils.validateSolrServerDocumentCount(
+        TestUtils.validateSolrServerDocumentCount(
                 MINIMR_CONF_DIR,
                 FileSystem.get(HBASE_TEST_UTILITY.getConfiguration()),
                 new Path("/solroutput", "results"),
@@ -132,8 +130,8 @@ public class HBaseMapReduceIndexerToolTest {
             "--output-dir", fs.makeQualified(new Path("/solroutput")).toString(),
             "--shards", "3",
             "--overwrite-output-dir");
-        
-        ForkedTestUtils.validateSolrServerDocumentCount(
+
+        TestUtils.validateSolrServerDocumentCount(
                 MINIMR_CONF_DIR,
                 FileSystem.get(HBASE_TEST_UTILITY.getConfiguration()),
                 new Path("/solroutput", "results"),
@@ -157,10 +155,10 @@ public class HBaseMapReduceIndexerToolTest {
             "--overwrite-output-dir",
             "--hbase-table-name", "record",
             "--verbose",
-            "--log4j", new File(Resources.getResource("log4j-base.properties").toURI()).toString()
+                "--log4j", new File(Resources.getResource("log4j.properties").toURI()).toString()
             );
-        
-        ForkedTestUtils.validateSolrServerDocumentCount(
+
+        TestUtils.validateSolrServerDocumentCount(
                 MINIMR_CONF_DIR,
                 FileSystem.get(HBASE_TEST_UTILITY.getConfiguration()),
                 new Path("/solroutput", "results"),
@@ -182,8 +180,8 @@ public class HBaseMapReduceIndexerToolTest {
             "--hbase-end-row", "row1000",
             "--max-segments", "2",
             "--overwrite-output-dir");
-        
-        ForkedTestUtils.validateSolrServerDocumentCount(
+
+        TestUtils.validateSolrServerDocumentCount(
                 MINIMR_CONF_DIR,
                 FileSystem.get(HBASE_TEST_UTILITY.getConfiguration()),
                 new Path("/solroutput", "results"),

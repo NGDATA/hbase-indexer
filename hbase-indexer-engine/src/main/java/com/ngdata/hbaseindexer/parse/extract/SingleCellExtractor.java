@@ -15,13 +15,14 @@
  */
 package com.ngdata.hbaseindexer.parse.extract;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import com.google.common.collect.Lists;
 import com.ngdata.hbaseindexer.parse.ByteArrayExtractor;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Result;
+
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Extracts a byte array from a single cell specified by a named column family and qualifier.
@@ -58,7 +59,7 @@ public class SingleCellExtractor implements ByteArrayExtractor {
     
     @Override
     public boolean isApplicable(KeyValue keyValue) {
-        return keyValue.matchingColumn(columnFamily, columnQualifier);
+        return CellUtil.matchingColumn(keyValue, columnFamily, columnQualifier);
     }
 
     @Override

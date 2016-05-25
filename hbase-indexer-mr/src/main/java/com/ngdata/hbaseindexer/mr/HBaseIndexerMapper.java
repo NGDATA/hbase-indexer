@@ -15,8 +15,8 @@
  */
 package com.ngdata.hbaseindexer.mr;
 
-import static com.ngdata.hbaseindexer.indexer.SolrServerFactory.createHttpSolrServers;
-import static com.ngdata.hbaseindexer.indexer.SolrServerFactory.createSharder;
+import static com.ngdata.hbaseindexer.indexer.SolrClientFactory.createHttpSolrClients;
+import static com.ngdata.hbaseindexer.indexer.SolrClientFactory.createSharder;
 import static com.ngdata.hbaseindexer.util.solr.SolrConnectionParamUtil.getSolrMaxConnectionsPerRoute;
 import static com.ngdata.hbaseindexer.util.solr.SolrConnectionParamUtil.getSolrMaxConnectionsTotal;
 import static com.ngdata.hbaseindexer.util.solr.SolrConnectionParamUtil.getSolrMode;
@@ -42,7 +42,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableSplit;
 import org.apache.hadoop.io.Text;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.hadoop.SolrInputDocumentWritable;
 import org.apache.solr.hadoop.SolrOutputFormat;
 import org.apache.solr.hadoop.Utils;
@@ -82,7 +82,7 @@ import com.yammer.metrics.core.Timer;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 
 /**
  * Mapper for converting HBase Result objects into index documents.
@@ -267,7 +267,7 @@ public class HBaseIndexerMapper extends TableMapper<Text, SolrInputDocumentWrita
         if (collectionName == null) {
             throw new IllegalStateException("No collection name defined");
         }
-        CloudSolrServer solrServer = new CloudSolrServer(indexZkHost);
+        CloudSolrClient solrServer = new CloudSolrClient(indexZkHost);
         int zkSessionTimeout = HBaseIndexerConfiguration.getSessionTimeout(context.getConfiguration());
         solrServer.setZkClientTimeout(zkSessionTimeout);
         solrServer.setZkConnectTimeout(zkSessionTimeout);      
@@ -284,7 +284,7 @@ public class HBaseIndexerMapper extends TableMapper<Text, SolrInputDocumentWrita
         connectionManager.setMaxTotal(getSolrMaxConnectionsTotal(indexConnectionParams));
 
         HttpClient httpClient = new DefaultHttpClient(connectionManager);
-        List<SolrServer> solrServers = createHttpSolrServers(indexConnectionParams, httpClient);
+        List<SolrClient> solrServers = createHttpSolrClients(indexConnectionParams, httpClient);
 
         return new DirectSolrClassicInputDocumentWriter(
                 context.getConfiguration().get(INDEX_NAME_CONF_KEY), solrServers);

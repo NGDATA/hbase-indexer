@@ -15,7 +15,30 @@
  */
 package com.ngdata.hbaseindexer.parse;
 
-import static com.ngdata.sep.impl.HBaseShims.newResult;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.ngdata.hbaseindexer.conf.DocumentExtractDefinition;
+import com.ngdata.hbaseindexer.conf.FieldDefinition;
+import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.NavigableSet;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -23,33 +46,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.NavigableSet;
-
-import javax.xml.parsers.ParserConfigurationException;
-
-import org.mockito.ArgumentCaptor;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.ngdata.hbaseindexer.conf.DocumentExtractDefinition;
-import com.ngdata.hbaseindexer.conf.FieldDefinition;
-import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
-import org.apache.solr.core.SolrConfig;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 public class DefaultResultToSolrMapperTest {
 
@@ -82,7 +78,7 @@ public class DefaultResultToSolrMapperTest {
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, Bytes.toBytes("dummy value"));
-        Result result = newResult(Lists.newArrayList(kvA, kvB));
+        Result result = Result.create(Lists.<Cell>newArrayList(kvA, kvB));
 
         resultMapper.map(result, solrUpdateWriter);
         verify(solrUpdateWriter).add(solrInputDocCaptor.capture());
@@ -172,8 +168,8 @@ public class DefaultResultToSolrMapperTest {
         DefaultResultToSolrMapper resultToSolrMapper = new DefaultResultToSolrMapper("index-name",
                 Lists.newArrayList(new FieldDefinition("fieldname", "cfA:qualifierA", ValueSource.VALUE, "int")),
                         Collections.<DocumentExtractDefinition>emptyList());
-        
-        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+
+        Result result = Result.create(Lists.<Cell>newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertTrue(resultToSolrMapper.containsRequiredData(result));
     }
@@ -184,8 +180,8 @@ public class DefaultResultToSolrMapperTest {
         DefaultResultToSolrMapper resultToSolrMapper = new DefaultResultToSolrMapper("index-name",
                 Lists.newArrayList(new FieldDefinition("fieldname", "cfA:quali*", ValueSource.VALUE, "int")),
                         Collections.<DocumentExtractDefinition>emptyList());
-        
-        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+
+        Result result = Result.create(Lists.<Cell>newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertFalse(resultToSolrMapper.containsRequiredData(result));
     }

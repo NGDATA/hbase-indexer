@@ -25,13 +25,8 @@
   <parent>
     <groupId>com.ngdata</groupId>
     <artifactId>hbase-indexer</artifactId>
-    <version>1.6-SNAPSHOT</version>
-    <relativePath>..</relativePath>
+    <version>1.7-ngdata-SNAPSHOT</version>
   </parent>
-
-  <properties>
-    <hadoop.version>${version.hadoop.mr1.hbase98}</hadoop.version>
-  </properties>
 
   <dependencies>
     <dependency>
@@ -45,13 +40,33 @@
         <exclusion>
           <!-- CDH-16644: no need for startReportingMetricsToHTTP command from kite-morphlines-metrics-servlets -->
           <groupId>org.eclipse.jetty</groupId>
-          <artifactId>jetty-servlet</artifactId> 
+          <artifactId>jetty-servlet</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.cloudera.search</groupId>
-      <artifactId>search-mr</artifactId>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-map-reduce</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-server</artifactId>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-jobclient</artifactId>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-hdfs</artifactId>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-common</artifactId>
+      <type>test-jar</type>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -96,172 +111,27 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-servlet</artifactId>
-    </dependency>    
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-hadoop2-compat</artifactId>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hbase</groupId>
+      <artifactId>hbase-hadoop-compat</artifactId>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-yarn-server-tests</artifactId>
+      <type>test-jar</type>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-hs</artifactId>
+    </dependency>
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>yarn</id>
-      <properties>
-        <hadoop.version>${version.hadoop.hbase98}</hadoop.version>
-      </properties>
-    </profile>
-    
-    <profile>
-      <id>0.94</id>
-      <activation>
-        <property>
-          <name>!hbase.api</name>
-        </property>
-      </activation>
-
-      <properties>
-        <log4j.properties.file>log4j-0.94.properties</log4j.properties.file>
-      </properties>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-core</artifactId>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase</artifactId>
-        </dependency>
-
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase</artifactId>
-          <type>test-jar</type>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-test</artifactId>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-common</artifactId>
-          <classifier>tests</classifier>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-hdfs</artifactId>
-          <classifier>tests</classifier>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-
-    <profile>
-      <id>0.96</id>
-      <activation>
-        <property>
-          <name>hbase.api</name>
-          <value>0.96</value>
-        </property>
-      </activation>
-
-
-      <properties>
-        <log4j.properties.file>log4j-0.96.properties</log4j.properties.file>
-      </properties>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase-server</artifactId>
-          <type>test-jar</type>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-test</artifactId>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase-hadoop2-compat</artifactId>
-          <type>test-jar</type>
-          <scope>test</scope>
-          <version>${version.hbase96}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase-hadoop-compat</artifactId>
-          <type>test-jar</type>
-          <scope>test</scope>
-          <version>${version.hbase96}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-common</artifactId>
-          <classifier>tests</classifier>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-hdfs</artifactId>
-          <classifier>tests</classifier>
-          <scope>test</scope>
-        </dependency>
-
-      </dependencies>  
-    </profile>
-    
-    <profile>
-      <id>0.98</id>
-      <activation>
-        <property>
-          <name>hbase.api</name>
-          <value>0.98</value>
-        </property>
-      </activation>
-
-      <properties>
-        <log4j.properties.file>log4j-0.98.properties</log4j.properties.file>
-      </properties>
-
-      <dependencies>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-client</artifactId>
-          <version>${hadoop.version}</version>
-          <scope>provided</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hadoop</groupId>
-          <artifactId>hadoop-minicluster</artifactId>
-          <version>${hadoop.version}</version>
-          <scope>test</scope>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase-server</artifactId>
-          <type>test-jar</type>
-          <scope>test</scope>
-          <version>${version.hbase98}</version>
-        </dependency>
-
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase-hadoop2-compat</artifactId>
-          <type>test-jar</type>
-          <scope>test</scope>
-          <version>${version.hbase98}</version>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hbase</groupId>
-          <artifactId>hbase-hadoop-compat</artifactId>
-          <type>test-jar</type>
-          <scope>test</scope>
-          <version>${version.hbase98}</version>
-        </dependency>
-      </dependencies>  
-    </profile>
-  </profiles>
 
   <build>
     <plugins>
@@ -274,11 +144,11 @@
             <MALLOC_ARENA_MAX>4</MALLOC_ARENA_MAX>
           </environmentVariables>
           <systemPropertyVariables>
-            <log4j.configuration>file:${project.build.testOutputDirectory}/${log4j.properties.file}</log4j.configuration>
+            <log4j.configuration>file:${project.build.testOutputDirectory}/log4j.properties</log4j.configuration>
           </systemPropertyVariables>
         </configuration>
       </plugin>
-      
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>

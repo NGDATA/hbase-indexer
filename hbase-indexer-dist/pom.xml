@@ -25,8 +25,7 @@
   <parent>
     <groupId>com.ngdata</groupId>
     <artifactId>hbase-indexer</artifactId>
-    <version>1.6-SNAPSHOT</version>
-    <relativePath>..</relativePath>
+    <version>1.7-ngdata-SNAPSHOT</version>
   </parent>
 
   <dependencies>
@@ -65,7 +64,7 @@
               <skipAssembly>false</skipAssembly>
               <tarLongFileMode>gnu</tarLongFileMode>
               <appendAssemblyId>false</appendAssemblyId>
-              <finalName>hbase-indexer-${project.version}</finalName>
+              <finalName>hbase-indexer-1.6-SNAPSHOT</finalName>
               <descriptors>
                 <descriptor>src/assembly/assembly.xml</descriptor>
               </descriptors>
@@ -110,7 +109,7 @@
                   <groupname>root</groupname>
                   <sources>
                     <source>
-                      <location>${project.build.directory}/hbase-indexer-${project.version}/hbase-indexer-${project.version}/</location>
+                      <location>${project.build.directory}/hbase-indexer-1.6-SNAPSHOT/hbase-indexer-1.6-SNAPSHOT/</location>
                     </source>
                   </sources>
                 </mapping>

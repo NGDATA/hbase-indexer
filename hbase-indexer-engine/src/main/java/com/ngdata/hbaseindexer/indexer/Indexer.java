@@ -15,19 +15,6 @@
  */
 package com.ngdata.hbaseindexer.indexer;
 
-import static com.ngdata.hbaseindexer.metrics.IndexerMetricsUtil.metricName;
-import static com.ngdata.sep.impl.HBaseShims.newResult;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nullable;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.collect.HashBasedTable;
@@ -50,6 +37,7 @@ import com.yammer.metrics.core.Timer;
 import com.yammer.metrics.core.TimerContext;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
@@ -58,6 +46,17 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+
+import static com.ngdata.hbaseindexer.metrics.IndexerMetricsUtil.metricName;
 
 /**
  * The indexing algorithm. It receives an event from the SEP, handles it based on the configuration, and eventually
@@ -339,7 +338,7 @@ public abstract class Indexer {
                 if (keyValue.isDelete()) {
                     handleDelete(documentId, keyValue, updateCollector, uniqueKeyFormatter);
                 } else {
-                    Result result = newResult(Collections.singletonList(keyValue));
+                    Result result = Result.create(Collections.<Cell>singletonList(keyValue));
                     SolrUpdateWriter updateWriter = new RowAndFamilyAddingSolrUpdateWriter(
                             conf.getRowField(),
                             conf.getColumnFamilyField(),

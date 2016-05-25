@@ -17,12 +17,10 @@ package com.ngdata.hbaseindexer.mr;
 
 import com.ngdata.hbaseindexer.parse.ResultToSolrMapper;
 import com.ngdata.hbaseindexer.parse.SolrUpdateWriter;
-import com.ngdata.sep.impl.HBaseShims;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.solr.common.SolrInputDocument;
 
 /**
  * Fake ResultToSolrMapper implementation to allow specifying a Get.
@@ -36,7 +34,7 @@ public class MockResultToSolrMapper implements ResultToSolrMapper {
 
     @Override
     public Get getGet(byte[] row) {
-        Get get = HBaseShims.newGet();
+        Get get = new Get(Bytes.toBytes(" "));
         get.addColumn(Bytes.toBytes("info"), Bytes.toBytes("firstname"));
         get.addColumn(Bytes.toBytes("info"), Bytes.toBytes("lastname"));
         get.addColumn(Bytes.toBytes("info"), Bytes.toBytes("age"));

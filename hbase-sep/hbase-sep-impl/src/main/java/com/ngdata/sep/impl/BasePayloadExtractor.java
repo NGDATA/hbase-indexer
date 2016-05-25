@@ -17,6 +17,7 @@ package com.ngdata.sep.impl;
 
 import com.google.common.base.Preconditions;
 import com.ngdata.sep.PayloadExtractor;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.util.Bytes;
 
@@ -61,7 +62,7 @@ public class BasePayloadExtractor implements PayloadExtractor {
      */
     @Override
     public byte[] extractPayload(byte[] tableName, KeyValue keyValue) {
-        if (Bytes.equals(this.tableName, tableName) && keyValue.matchingColumn(columnFamily, columnQualifier)) {
+        if (Bytes.equals(this.tableName, tableName) && CellUtil.matchingColumn(keyValue, columnFamily, columnQualifier)) {
             return keyValue.getValue();
         } else {
             return null;

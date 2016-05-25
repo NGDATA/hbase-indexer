@@ -38,8 +38,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.log4j.PropertyConfigurator;
-import org.apache.solr.hadoop.ForkedMapReduceIndexerTool;
-import org.apache.solr.hadoop.ForkedToolRunnerHelpFormatter;
 import org.apache.solr.hadoop.PathArgumentType;
 import org.apache.solr.hadoop.dedup.RetainMostRecentUpdateConflictResolver;
 
@@ -86,7 +84,7 @@ class HBaseIndexerArgumentParser {
                         "transforms it into SolrInputDocuments. If run as a mapper-only job, this phase also writes the SolrInputDocuments " +
                         "directly to a live SolrCloud cluster. The conversion from HBase records into Solr documents is performed via a " +
                         "hbase-indexer configuration and typically based on a morphline.\n\n" +
-                        "2) Reducer phase: This (parallel) phase loads the mapper's SolrInputDocuments into one EmbeddedSolrServer per reducer. " +
+                        "2) Reducer phase: This (parallel) phase loads the mapper's SolrInputDocuments into one EmbeddedSolrClient per reducer. " +
                         "Each such reducer and Solr server can be seen as a (micro) shard. The Solr servers store their data in HDFS.\n\n" +
                         "3) Mapper-only merge phase: This (parallel) phase merges the set of reducer shards into the number of " +
                         "Solr shards expected by the user, using a mapper-only job. This phase is omitted if the number of shards is " +
@@ -246,7 +244,7 @@ class HBaseIndexerArgumentParser {
                     public void run(ArgumentParser parser, Argument arg, Map<String, Object> attrs, String flag, Object value) throws ArgumentParserException {
                       parser.printHelp(new PrintWriter(System.out, true));
                       System.out.println();
-                      System.out.print(ForkedToolRunnerHelpFormatter.getGenericCommandUsage());
+                      System.out.print(ToolRunnerHelpFormatter.getGenericCommandUsage());
                       System.out.println("Examples: \n\n" +
                         "# (Re)index a table in GoLive mode based on a local indexer config file\n" +
                         "hadoop --config /etc/hadoop/conf \\\n" +
@@ -322,7 +320,7 @@ class HBaseIndexerArgumentParser {
                                 && path.toUri().getAuthority() == null) {
                             // TODO: consider defaulting to hadoop's
                             // fs.default.name here or in
-                            // SolrRecordWriter.createEmbeddedSolrServer()
+                            // SolrRecordWriter.createEmbeddedSolrClient()
                             throw new ArgumentParserException("Missing authority in path URI: "
                                     + path, parser);
                         }
@@ -481,7 +479,6 @@ class HBaseIndexerArgumentParser {
         }
         LOG.debug("Parsed command line args: " + ns);
 
-        opts.inputLists = Collections.EMPTY_LIST;
         opts.outputDir = (Path) ns.get(outputDirArg.getDest());
         opts.overwriteOutputDir = ns.getBoolean(overwriteOutputDirArg.getDest());
         opts.reducers = ns.getInt(reducersArg.getDest());
@@ -496,7 +493,7 @@ class HBaseIndexerArgumentParser {
         opts.isVerbose = ns.getBoolean(verboseArg.getDest());
         opts.zkHost = ns.getString(zkHostArg.getDest());
         opts.shards = ns.getInt(shardsArg.getDest());
-        opts.shardUrls = ForkedMapReduceIndexerTool.buildShardUrls(ns.getList(shardUrlsArg.getDest()), opts.shards);
+        opts.shardUrls = HBaseMapReduceIndexerTool.buildShardUrls(ns.getList(shardUrlsArg.getDest()), opts.shards);
         opts.goLive = ns.getBoolean(goLiveArg.getDest());
         opts.goLiveThreads = ns.getInt(goLiveThreadsArg.getDest());
         opts.collection = ns.getString(collectionArg.getDest());

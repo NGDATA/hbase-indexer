@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 
@@ -47,7 +47,7 @@ public interface SolrInputDocumentWriter {
     void deleteById(int shard, List<String> idsToDelete) throws SolrServerException, IOException;
 
     /**
-     * Has the same behavior as {@link SolrServer#deleteByQuery(String)} (optional operation).
+     * Has the same behavior as {@link SolrClient#deleteByQuery(String)} (optional operation).
      *
      * @param deleteQuery delete query to be executed
      */

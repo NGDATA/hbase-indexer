@@ -15,23 +15,23 @@
  */
 package com.ngdata.hbaseindexer.parse.extract;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.Collections;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Before;
 import org.junit.Test;
 
-import static com.ngdata.sep.impl.HBaseShims.newResult;
+import java.util.Collections;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 
 public class SingleCellExtractorTest {
 
@@ -82,14 +82,14 @@ public class SingleCellExtractorTest {
 
     @Test
     public void testContainsTarget_True() {
-        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY, COLUMN_QUALIFIER,
+        Result result = Result.create(Lists.<Cell>newArrayList(new KeyValue(ROW, COLUMN_FAMILY, COLUMN_QUALIFIER,
                 Bytes.toBytes("value"))));
         assertTrue(extractor.containsTarget(result));
     }
 
     @Test
     public void testContainsTarget_False() {
-        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY,
+        Result result = Result.create(Lists.<Cell>newArrayList(new KeyValue(ROW, COLUMN_FAMILY,
                 Bytes.toBytes("wrong qualifier"), Bytes.toBytes("value"))));
         assertFalse(extractor.containsTarget(result));
     }

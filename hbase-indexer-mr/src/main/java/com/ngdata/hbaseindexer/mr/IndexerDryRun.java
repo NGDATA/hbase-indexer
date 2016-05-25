@@ -45,8 +45,6 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.hadoop.ForkedMapReduceIndexerTool;
-import org.apache.solr.hadoop.MorphlineClasspathUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +140,7 @@ class IndexerDryRun {
             Closer.close(htable);
         }
         
-        ForkedMapReduceIndexerTool.goodbye(null, programStartTime);        
+        HBaseMapReduceIndexerTool.goodbye(null, programStartTime);
         return 0;
         
     }

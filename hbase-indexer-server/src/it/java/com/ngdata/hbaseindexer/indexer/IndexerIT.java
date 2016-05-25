@@ -15,17 +15,6 @@
  */
 package com.ngdata.hbaseindexer.indexer;
 
-import static org.apache.zookeeper.ZooKeeper.States.CONNECTED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -42,7 +31,6 @@ import com.ngdata.hbaseindexer.util.net.NetUtils;
 import com.ngdata.hbaseindexer.util.solr.SolrTestingUtility;
 import com.ngdata.sep.impl.SepReplicationSource;
 import com.ngdata.sep.impl.SepTestUtil;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HColumnDescriptor;
@@ -55,7 +43,7 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.replication.ReplicationAdmin;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -70,6 +58,18 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+
+import static org.apache.zookeeper.ZooKeeper.States.CONNECTED;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 /**
  * Integration tests.
  *
@@ -80,8 +80,8 @@ public class IndexerIT {
     private static Configuration conf;
     private static HBaseTestingUtility hbaseTestUtil;
     private static SolrTestingUtility solrTestingUtility;
-    private static CloudSolrServer collection1;
-    private static CloudSolrServer collection2;
+    private static CloudSolrClient collection1;
+    private static CloudSolrClient collection2;
 
     private Main main;
     private int oldMasterEventCount;
@@ -121,10 +121,10 @@ public class IndexerIT {
         solrTestingUtility.createCore("collection1_core1", "collection1", "config1", 1);
         solrTestingUtility.createCore("collection2_core1", "collection2", "config1", 1);
 
-        collection1 = new CloudSolrServer(solrTestingUtility.getZkConnectString());
+        collection1 = new CloudSolrClient(solrTestingUtility.getZkConnectString());
         collection1.setDefaultCollection("collection1");
 
-        collection2 = new CloudSolrServer(solrTestingUtility.getZkConnectString());
+        collection2 = new CloudSolrClient(solrTestingUtility.getZkConnectString());
         collection2.setDefaultCollection("collection2");
     }
 
@@ -206,7 +206,7 @@ public class IndexerIT {
                         Bytes.toBytes("<indexer table='table1'><field name='field1_s' value='family1:qualifier1'/></indexer>"))
                 .connectionType("solr")
                 .connectionParams(ImmutableMap.of("solr.zk", solrTestingUtility.getZkConnectString(),
-                                                  "solr.collection", "collection1"))
+                        "solr.collection", "collection1"))
                 .build();
 
         indexerModel.addIndexer(indexerDef);
@@ -219,12 +219,12 @@ public class IndexerIT {
 
         // Commit Solr index and check data is present
         waitForSolrDocumentCount(1);
-        
+
         // Delete
         Delete delete = new Delete(b("row1"));
         table.delete(delete);
         table.delete(delete);
-        
+
         waitForSolrDocumentCount(0);
 
         table.close();
@@ -241,10 +241,10 @@ public class IndexerIT {
                 .name("indexer1")
                 .configuration(
                         Bytes.toBytes("<indexer table='regex:table\\d+'><field name='field1_s' " +
-                                              "value='family1:qualifier1'/></indexer>"))
+                                "value='family1:qualifier1'/></indexer>"))
                 .connectionType("solr")
                 .connectionParams(ImmutableMap.of("solr.zk", solrTestingUtility.getZkConnectString(),
-                                                  "solr.collection", "collection1"))
+                        "solr.collection", "collection1"))
                 .build();
 
         indexerModel.addIndexer(indexerDef);
@@ -277,7 +277,7 @@ public class IndexerIT {
                 .name("indexer1")
                 .configuration(
                         Bytes.toBytes(("<indexer table='table1'><field name='field1_s' " +
-                                          "value='family1:qualifier1'/></indexer>")))
+                                "value='family1:qualifier1'/></indexer>")))
                 .connectionType("solr")
                 .connectionParams(ImmutableMap.of("solr.zk", solrTestingUtility.getZkConnectString(),
                         "solr.collection", "collection1"))
@@ -296,11 +296,14 @@ public class IndexerIT {
         table.put(put);
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
-        SepTestUtil.waitOnReplication(conf, 60000L);
 
-        collection1.commit();
-        QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                return collection1.query(new SolrQuery("*:*")).getResults().size() == 1;
+            }
+        });
 
         // update indexer model
         markEventCounts();
@@ -320,11 +323,14 @@ public class IndexerIT {
         put.add(b("family1"), b("qualifier2"), b("value1"));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                return collection1.query(new SolrQuery("*:*")).getResults().size() == 2;
+            }
+        });
 
-        collection1.commit();
-        response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(2, response.getResults().size());
 
         table.close();
     }
@@ -375,13 +381,17 @@ public class IndexerIT {
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer2"));
-        SepTestUtil.waitOnReplication(conf, 60000L);
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                collection2.commit();
 
-        collection1.commit();
-        collection2.commit();
+                return collection1.query(new SolrQuery("*:*")).getResults().size() == 1 &&
+                        collection2.query(new SolrQuery("*:*")).getResults().size() == 1;
+            }
+        });
 
-        assertEquals(1, collection1.query(new SolrQuery("*:*")).getResults().size());
-        assertEquals(1, collection2.query(new SolrQuery("*:*")).getResults().size());
 
         table1.close();
         table2.close();
@@ -531,7 +541,7 @@ public class IndexerIT {
             put.add(b("family1"), b("qualifier1"), b("value1"));
             table.put(put);
         }
-        
+
         // Ensure that the index is added on a different timestamp than the last put
         Thread.sleep(5);
 
@@ -548,13 +558,17 @@ public class IndexerIT {
         indexerModel.addIndexer(indexerDef);
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
-        SepTestUtil.waitOnReplication(conf, 60000L);
 
         // Check that records created before the indexer was added are not indexed
-        collection1.commit();
-        
-        SolrDocumentList results = collection1.query(new SolrQuery("*:*")).getResults();
-        assertEquals("Got results " + results + " while expecting none", 0, results.size());
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                SolrDocumentList results = collection1.query(new SolrQuery("*:*")).getResults();
+                return results.size() == 0;
+            }
+        });
+
 
         // But newly added rows should be indexed
         for (int i = 0; i < 10; i++) {
@@ -563,9 +577,13 @@ public class IndexerIT {
             table.put(put);
         }
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
-        collection1.commit();
-        assertEquals(10, collection1.query(new SolrQuery("*:*")).getResults().size());
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                return collection1.query(new SolrQuery("*:*")).getResults().size() == 10;
+            }
+        });
 
         table.close();
     }
@@ -586,15 +604,21 @@ public class IndexerIT {
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
 
-        Put put = new Put(new byte[] { 0, 0, 0, 0 });
+        Put put = new Put(new byte[]{0, 0, 0, 0});
         put.add(b("family1"), b("field1"), b("value1"));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
-        collection1.commit();
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (1 == response.getResults().size());
+            }
+        });
 
         QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
         SolrDocument doc = response.getResults().get(0);
         assertEquals("00000000", doc.getFirstValue("id").toString());
 
@@ -616,17 +640,23 @@ public class IndexerIT {
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
 
-        Put put = new Put(new byte[] { 0, 0, 0, 0 });
+        Put put = new Put(b("row1"));
         put.add(b("family1"), b("field1"), b("value1"));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
-        collection1.commit();
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (1 == response.getResults().size());
+            }
+        });
 
         QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
         SolrDocument doc = response.getResults().get(0);
-        assertEquals("#0;#0;#0;#0;", doc.getFirstValue("id").toString());
+        assertEquals("row1", doc.getFirstValue("id").toString());
 
         table.close();
     }
@@ -656,11 +686,16 @@ public class IndexerIT {
         put.add(b("family1"), b("field3"), b("blue,green,black,orange"));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (1 == response.getResults().size());
+            }
+        });
 
-        collection1.commit();
         QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
         SolrDocument doc = response.getResults().get(0);
         assertEquals("value1", doc.getFirstValue("field1_s"));
         assertEquals(836, Integer.parseInt(doc.getFirstValue("field2_s").toString()));
@@ -680,7 +715,7 @@ public class IndexerIT {
         StringBuilder indexerConf = new StringBuilder();
         indexerConf.append("<indexer table='table1' mapper='" + MorphlineResultToSolrMapper.class.getName() + "'>");
         indexerConf.append("  <param name='morphlineFile'" +
-            " value='../hbase-indexer-morphlines/src/test/resources/test-morphlines/extractHBaseCell.conf'/>");
+                " value='../hbase-indexer-morphlines/src/test/resources/test-morphlines/extractHBaseCell.conf'/>");
         indexerConf.append("</indexer>");
 
         createIndexer1(indexerConf.toString());
@@ -691,11 +726,16 @@ public class IndexerIT {
         put.add(b("family1"), b("field1"), Bytes.toBytes(4279));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (1 == response.getResults().size());
+            }
+        });
 
-        collection1.commit();
         QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
         SolrDocument doc = response.getResults().get(0);
         assertEquals("4279", doc.getFirstValue("field1_s"));
 
@@ -711,7 +751,7 @@ public class IndexerIT {
         StringBuilder indexerConf = new StringBuilder();
         indexerConf.append("<indexer table='table1' mapper='" + MorphlineResultToSolrMapper.class.getName() + "'>");
         indexerConf.append("  <param name='morphlineFile'" +
-            " value='../hbase-indexer-morphlines/src/test/resources/test-morphlines/extractHBaseCellWithWildcardInputFieldMix.conf'/>");
+                " value='../hbase-indexer-morphlines/src/test/resources/test-morphlines/extractHBaseCellWithWildcardInputFieldMix.conf'/>");
         indexerConf.append("</indexer>");
 
         createIndexer1(indexerConf.toString());
@@ -723,11 +763,16 @@ public class IndexerIT {
         put.add(b("family1"), b("field0"), Bytes.toBytes(1234));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (1 == response.getResults().size());
+            }
+        });
 
-        collection1.commit();
         QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
         SolrDocument doc = response.getResults().get(0);
         assertEquals("4279", doc.getFirstValue("field1_s"));
         assertEquals(Arrays.asList("1234", "4279"), doc.getFieldValues("field0_ss"));
@@ -770,13 +815,17 @@ public class IndexerIT {
         put.add(b("family1"), b("col4"), b("value4"));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (4 == response.getResults().size());
+            }
+        });
 
-        collection1.commit();
-        QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(4, response.getResults().size());
 
-        response = collection1.query(new SolrQuery("+row_s:\"the row\""));
+        QueryResponse response = collection1.query(new SolrQuery("+row_s:\"the row\""));
         assertEquals(4, response.getResults().size());
 
         response = collection1.query(new SolrQuery("+row_s:\"the row\" +family_s:family1"));
@@ -794,7 +843,7 @@ public class IndexerIT {
     }
 
     @Test
-    public void testLifecycleListeners () throws Exception{
+    public void testLifecycleListeners() throws Exception {
         IndexerLifecycleListener indexerLifecycleListener = Mockito.mock(IndexerLifecycleListener.class);
         main.getIndexerMaster().registerLifecycleListener(indexerLifecycleListener);
         createTable("table1", "family1");
@@ -806,12 +855,12 @@ public class IndexerIT {
         indexerConf.append("  <field name='field1_s' value='family1:field1' type='string'/>");
         indexerConf.append("</indexer>");
 
-        checkLifecycleEvents(0,0,0,0, indexerLifecycleListener);
+        checkLifecycleEvents(0, 0, 0, 0, indexerLifecycleListener);
         createIndexer1(indexerConf.toString());
         IndexerDefinitionBuilder indexerDefinitionBuilder;
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
-        checkLifecycleEvents(1,0,0,0, indexerLifecycleListener);
+        checkLifecycleEvents(1, 0, 0, 0, indexerLifecycleListener);
         Mockito.reset(indexerLifecycleListener);
 
         IndexerDefinition indexerDefinition = main.getIndexerModel().getIndexer("indexer1");
@@ -872,7 +921,7 @@ public class IndexerIT {
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
 
-        byte[] rowkey = new byte[] { 0, 0, 0, 0 };
+        byte[] rowkey = b("row1");
 
         // First do a row update whereby we only set irrelevant fields (fields that do not need to be indexed)
         Put put = new Put(rowkey);
@@ -886,13 +935,19 @@ public class IndexerIT {
         put.add(b("family1"), b("field1"), b("value1"));
         table.put(put);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
-        collection1.commit();
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (1 == response.getResults().size());
+            }
+        });
 
         QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
         SolrDocument doc = response.getResults().get(0);
-        assertEquals("#0;#0;#0;#0;", doc.getFirstValue("id").toString());
+        assertEquals("row1", doc.getFirstValue("id").toString());
 
         table.close();
     }
@@ -930,13 +985,19 @@ public class IndexerIT {
         }
         table.put(puts);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
-        collection1.commit();
+        final int finalExpectedRows = expectedRows;
 
-        SolrQuery params = new SolrQuery("*:*");
-        params.setRows(100);
-        QueryResponse response = collection1.query(params);
-        assertEquals(expectedRows, response.getResults().size());
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
+
+                SolrQuery params = new SolrQuery("*:*");
+                params.setRows(100);
+                QueryResponse response = collection1.query(params);
+                return finalExpectedRows == response.getResults().size();
+            }
+        });
 
         table.close();
     }
@@ -959,7 +1020,7 @@ public class IndexerIT {
 
         SepTestUtil.waitOnReplicationPeerReady(peerId("indexer1"));
 
-        byte[] rowkey = new byte[] { 0, 0, 0, 0 };
+        byte[] rowkey = b("row1");
 
         List<Put> puts = Lists.newArrayList();
         Put put = new Put(rowkey);
@@ -972,19 +1033,24 @@ public class IndexerIT {
 
         table.put(puts);
 
-        SepTestUtil.waitOnReplication(conf, 60000L);
-        collection1.commit();
+        Waiter.waitFor(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                collection1.commit();
 
+                QueryResponse response = collection1.query(new SolrQuery("*:*"));
+                return (1 == response.getResults().size());
+            }
+        });
         QueryResponse response = collection1.query(new SolrQuery("*:*"));
-        assertEquals(1, response.getResults().size());
         SolrDocument doc = response.getResults().get(0);
-        assertEquals("#0;#0;#0;#0;", doc.getFirstValue("id").toString());
+        assertEquals("row1", doc.getFirstValue("id").toString());
 
         table.close();
     }
 
     private void checkLifecycleEvents(int subscribes, int unsubscribes, int deletes, int builds,
-                                      IndexerLifecycleListener listener) {
+            IndexerLifecycleListener listener) {
         Mockito.verify(listener, Mockito.times(subscribes)).onSubscribe(Mockito.any(IndexerDefinition.class));
         Mockito.verify(listener, Mockito.times(unsubscribes)).onUnsubscribe(Mockito.any(IndexerDefinition.class));
         Mockito.verify(listener, Mockito.times(deletes)).onDelete(Mockito.any(IndexerDefinition.class));
@@ -999,7 +1065,7 @@ public class IndexerIT {
                 .configuration(Bytes.toBytes(indexerConf.toString()))
                 .connectionType("solr")
                 .connectionParams(ImmutableMap.of("solr.zk", solrTestingUtility.getZkConnectString(),
-                                                  "solr.collection", "collection1"))
+                        "solr.collection", "collection1"))
                 .build();
         indexerModel.addIndexer(indexerDef);
     }

@@ -25,18 +25,21 @@
   <parent>
     <groupId>com.ngdata</groupId>
     <artifactId>hbase-indexer</artifactId>
-    <version>1.6-SNAPSHOT</version>
-    <relativePath>..</relativePath>
+    <version>1.7-ngdata-SNAPSHOT</version>
   </parent>
 
   <dependencies>
-   <dependency>
+    <dependency>
       <groupId>com.ngdata</groupId>
       <artifactId>hbase-sep-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.ngdata</groupId>
       <artifactId>hbase-sep-impl</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.yammer.metrics</groupId>
+      <artifactId>metrics-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -51,14 +54,12 @@
       <artifactId>jul-to-slf4j</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.apache.solr</groupId>
-        <artifactId>solr-core</artifactId>
+      <groupId>org.apache.solr</groupId>
+      <artifactId>solr-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>solr</artifactId>
-      <version>${version.solr}</version>
-      <type>war</type>
+      <artifactId>solr-test-framework</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
@@ -107,7 +108,7 @@
                 <property name="generated.sources" location="${project.build.directory}/generated-sources" />
 
                 <exec executable="sh">
-                  <arg line="${basedir}/src/saveVersion.sh ${project.version} ${generated.sources}/java ${project.basedir}/.." />
+                  <arg line="${basedir}/src/saveVersion.sh 1.6-SNAPSHOT ${generated.sources}/java ${project.basedir}/.." />
                 </exec>
               </target>
             </configuration>

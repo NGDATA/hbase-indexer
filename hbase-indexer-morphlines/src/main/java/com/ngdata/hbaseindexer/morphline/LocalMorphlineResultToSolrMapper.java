@@ -15,32 +15,6 @@
  */
 package com.ngdata.hbaseindexer.morphline;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableSet;
-import java.util.TreeMap;
-
-import com.ngdata.hbaseindexer.ConfigureUtil;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.SolrInputDocument;
-import org.codehaus.jackson.node.ObjectNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.kitesdk.morphline.api.Command;
-import org.kitesdk.morphline.api.MorphlineCompilationException;
-import org.kitesdk.morphline.api.Record;
-import org.kitesdk.morphline.base.Compiler;
-import org.kitesdk.morphline.base.FaultTolerance;
-import org.kitesdk.morphline.base.Fields;
-import org.kitesdk.morphline.base.Metrics;
-import org.kitesdk.morphline.base.Notifications;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
@@ -56,12 +30,27 @@ import com.typesafe.config.ConfigFactory;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
+import org.kitesdk.morphline.api.Command;
+import org.kitesdk.morphline.api.MorphlineCompilationException;
+import org.kitesdk.morphline.api.Record;
+import org.kitesdk.morphline.base.Compiler;
+import org.kitesdk.morphline.base.FaultTolerance;
+import org.kitesdk.morphline.base.Fields;
+import org.kitesdk.morphline.base.Metrics;
+import org.kitesdk.morphline.base.Notifications;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.ngdata.sep.impl.HBaseShims.newGet;
+import java.io.File;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableSet;
+import java.util.TreeMap;
 
 /**
  * Performs Result to Solr mapping using morphlines.
@@ -142,7 +131,7 @@ final class LocalMorphlineResultToSolrMapper implements ResultToSolrMapper, Conf
         LOG.debug("Record fields passed by force to this morphline: {}", forcedRecordFields);
 
         // precompute familyMap; see DefaultResultToSolrMapper ctor
-        Get get = newGet();
+        Get get = new Get(Bytes.toBytes(" "));
         for (ByteArrayExtractor extractor : morphlineContext.getExtractors()) {
             byte[] columnFamily = extractor.getColumnFamily();
             byte[] columnQualifier = extractor.getColumnQualifier();

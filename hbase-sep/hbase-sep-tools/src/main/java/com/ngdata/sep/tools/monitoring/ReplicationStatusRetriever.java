@@ -15,8 +15,34 @@
  */
 package com.ngdata.sep.tools.monitoring;
 
-import com.ngdata.sep.impl.HBaseShims;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.ngdata.sep.tools.monitoring.ReplicationStatus.HLogInfo;
+import com.ngdata.sep.tools.monitoring.ReplicationStatus.Status;
+import com.ngdata.sep.util.zookeeper.ZooKeeperItf;
+import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.ServerName;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.FSUtils;
+import org.apache.hadoop.hbase.wal.DefaultWALProvider;
+import org.apache.hadoop.hbase.zookeeper.ZKUtil;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
+import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
+import javax.management.MBeanServerConnection;
+import javax.management.ObjectName;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -30,35 +56,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import javax.management.AttributeNotFoundException;
-import javax.management.InstanceNotFoundException;
-import javax.management.MBeanServerConnection;
-import javax.management.ObjectName;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
-import com.ngdata.sep.tools.monitoring.ReplicationStatus.HLogInfo;
-import com.ngdata.sep.tools.monitoring.ReplicationStatus.Status;
-import com.ngdata.sep.util.zookeeper.ZooKeeperItf;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.ServerName;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.hbase.util.FSUtils;
-import org.apache.hadoop.hbase.zookeeper.ZKUtil;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 
 /**
  * Collects replication status information.
@@ -305,7 +302,7 @@ public class ReplicationStatusRetriever {
      * @param hlogName name of HLog
      */
     private long getLogFileSize(String serverName, String hlogName) throws IOException {
-        Path hbaseLogDir = new Path(hbaseRootDir, HBaseShims.getHLogDirectoryName(serverName));
+        Path hbaseLogDir = new Path(hbaseRootDir, DefaultWALProvider.getWALDirectoryName(serverName));
         Path path = new Path(hbaseLogDir, hlogName);
         try {
             FileStatus status = fileSystem.getFileStatus(path);

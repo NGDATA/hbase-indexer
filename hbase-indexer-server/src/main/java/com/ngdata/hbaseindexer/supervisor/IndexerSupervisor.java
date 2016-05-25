@@ -15,9 +15,9 @@
  */
 package com.ngdata.hbaseindexer.supervisor;
 
-import static com.ngdata.hbaseindexer.indexer.SolrServerFactory.createCloudSolrServer;
-import static com.ngdata.hbaseindexer.indexer.SolrServerFactory.createHttpSolrServers;
-import static com.ngdata.hbaseindexer.indexer.SolrServerFactory.createSharder;
+import static com.ngdata.hbaseindexer.indexer.SolrClientFactory.createCloudSolrClient;
+import static com.ngdata.hbaseindexer.indexer.SolrClientFactory.createHttpSolrClients;
+import static com.ngdata.hbaseindexer.indexer.SolrClientFactory.createSharder;
 import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_ADDED;
 import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_DELETED;
 import static com.ngdata.hbaseindexer.model.api.IndexerModelEventType.INDEXER_UPDATED;
@@ -69,7 +69,7 @@ import org.apache.hadoop.hbase.client.HTablePool;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.zookeeper.KeeperException;
 
 /**
@@ -179,7 +179,7 @@ public class IndexerSupervisor {
 
     private void startIndexer(IndexerDefinition indexerDef) {
         IndexerHandle handle = null;
-        SolrServer solr = null;
+        SolrClient solr = null;
 
 
         String indexerProcessId = null;
@@ -209,14 +209,14 @@ public class IndexerSupervisor {
                 String solrMode = SolrConnectionParamUtil.getSolrMode(connectionParams);
                 if (solrMode.equals("cloud")) {
                     int zkSessionTimeout = HBaseIndexerConfiguration.getSessionTimeout(hbaseConf);
-                    solrWriter = new DirectSolrInputDocumentWriter(indexerDef.getName(), createCloudSolrServer(connectionParams, zkSessionTimeout));
+                    solrWriter = new DirectSolrInputDocumentWriter(indexerDef.getName(), createCloudSolrClient(connectionParams, zkSessionTimeout));
                 } else if (solrMode.equals("classic")) {
                     connectionManager = new PoolingClientConnectionManager();
                     connectionManager.setDefaultMaxPerRoute(getSolrMaxConnectionsPerRoute(connectionParams));
                     connectionManager.setMaxTotal(getSolrMaxConnectionsTotal(connectionParams));
 
                     httpClient = new DefaultHttpClient(connectionManager);
-                    List<SolrServer> solrServers = createHttpSolrServers(connectionParams, httpClient);
+                    List<SolrClient> solrServers = createHttpSolrClients(connectionParams, httpClient);
                     solrWriter = new DirectSolrClassicInputDocumentWriter(indexerDef.getName(), solrServers);
                     sharder = createSharder(connectionParams, solrServers.size());
                 } else {
@@ -353,11 +353,11 @@ public class IndexerSupervisor {
         private final IndexerDefinition indexerDef;
         private final Indexer indexer;
         private final SepConsumer sepConsumer;
-        private final SolrServer solrServer;
+        private final SolrClient solrServer;
         private final PoolingClientConnectionManager connectionManager;
 
         public IndexerHandle(IndexerDefinition indexerDef, Indexer indexer, SepConsumer sepEventSlave,
-                             SolrServer solrServer, PoolingClientConnectionManager connectionManager) {
+                             SolrClient solrServer, PoolingClientConnectionManager connectionManager) {
             this.indexerDef = indexerDef;
             this.indexer = indexer;
             this.sepConsumer = sepEventSlave;

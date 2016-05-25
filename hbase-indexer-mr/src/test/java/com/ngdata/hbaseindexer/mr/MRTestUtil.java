@@ -15,19 +15,17 @@
  */
 package com.ngdata.hbaseindexer.mr;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Method;
-
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.mapred.MiniMRCluster;
 import org.apache.hadoop.util.ToolRunner;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
+import java.io.File;
+import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 class MRTestUtil {
     
@@ -47,24 +45,10 @@ class MRTestUtil {
         assertEquals(0, exitCode);
     }
     
-    /**
-     * Start a mini MapReduce cluster in either HBase 0.94 or HBase 0.95/96 mode.
-     */
     public void startMrCluster() throws Exception {
-        // Handle compatibility between HBase 0.94 and HBase 0.95
-        Method startMrClusterMethod = hbaseTestUtil.getClass().getMethod("startMiniMapReduceCluster");
-        
-        if (Void.TYPE.equals(startMrClusterMethod.getReturnType())) {
-            // HBase 0.94.x doesn't return a MR cluster, and puts the JobTracker
-            // information directly in its own configuration
-            hbaseTestUtil.startMiniMapReduceCluster();
-        } else {
-            // HBase 0.95.x returns a MR cluster, and we have to manually
-            // copy the job tracker address into our configuration
-            MiniMRCluster mrCluster = (MiniMRCluster)startMrClusterMethod.invoke(hbaseTestUtil);
-            Configuration conf = hbaseTestUtil.getConfiguration();
-            conf.set("mapred.job.tracker", mrCluster.createJobConf().get("mapred.job.tracker"));
-        }
+        MiniMRCluster mrCluster = hbaseTestUtil.startMiniMapReduceCluster();
+        Configuration conf = hbaseTestUtil.getConfiguration();
+        conf.set("mapred.job.tracker", mrCluster.createJobConf().get("mapred.job.tracker"));
     }
     
     public static File substituteZkHost(File file, String zkConnectString) throws IOException {

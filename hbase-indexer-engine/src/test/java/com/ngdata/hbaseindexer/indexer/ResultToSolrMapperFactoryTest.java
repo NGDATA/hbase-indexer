@@ -23,7 +23,7 @@ import java.net.ServerSocket;
 import java.util.Map;
 
 import org.apache.hadoop.hbase.zookeeper.MiniZooKeeperCluster;
-import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -42,7 +42,7 @@ public class ResultToSolrMapperFactoryTest {
     private static int ZK_CLIENT_PORT;
 
     private static SolrTestingUtility SOLR_TEST_UTILITY;
-    private static CloudSolrServer COLLECTION1;
+    private static CloudSolrClient COLLECTION1;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -61,7 +61,7 @@ public class ResultToSolrMapperFactoryTest {
                 Resources.toByteArray(Resources.getResource(ResultToSolrMapperFactoryTest.class, "solrconfig.xml")));
         SOLR_TEST_UTILITY.createCore("collection1_core1", "collection1", "config1", 1);
 
-        COLLECTION1 = new CloudSolrServer(SOLR_TEST_UTILITY.getZkConnectString());
+        COLLECTION1 = new CloudSolrClient(SOLR_TEST_UTILITY.getZkConnectString());
         COLLECTION1.setDefaultCollection("collection1");
     }
 

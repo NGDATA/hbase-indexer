@@ -15,12 +15,6 @@
  */
 package com.ngdata.hbaseindexer.parse;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableSet;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.collect.Lists;
 import com.ngdata.hbaseindexer.ConfigureUtil;
 import com.ngdata.hbaseindexer.conf.DocumentExtractDefinition;
@@ -32,10 +26,16 @@ import com.yammer.metrics.core.TimerContext;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.solr.common.SolrInputDocument;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableSet;
+import java.util.concurrent.TimeUnit;
+
 import static com.ngdata.hbaseindexer.metrics.IndexerMetricsUtil.metricName;
-import static com.ngdata.sep.impl.HBaseShims.newGet;
 
 /**
  * Parses HBase {@code Result} objects into a structure of fields and values.
@@ -86,7 +86,7 @@ public class DefaultResultToSolrMapper implements ResultToSolrMapper {
             extractors.add(byteArrayExtractor);
         }
 
-        Get get = newGet();
+        Get get = new Get(Bytes.toBytes(" "));
         for (ByteArrayExtractor extractor : extractors) {
 
             byte[] columnFamily = extractor.getColumnFamily();

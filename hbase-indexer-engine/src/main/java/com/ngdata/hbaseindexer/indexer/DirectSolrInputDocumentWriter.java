@@ -27,14 +27,14 @@ import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.Meter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 
 /**
- * Writes updates (new documents and deletes) directly to a SolrServer.
+ * Writes updates (new documents and deletes) directly to a SolrClient.
  * <p>
  * There are two main pieces of functionality that this class provides, both related to error handling in Solr:
  * <h3>Selective swallowing of errors</h3>
@@ -53,7 +53,7 @@ import org.apache.solr.common.SolrInputDocument;
 public class DirectSolrInputDocumentWriter implements SolrInputDocumentWriter {
 
     private Log log = LogFactory.getLog(getClass());
-    private SolrServer solrServer;
+    private SolrClient solrServer;
     private Meter indexAddMeter;
     private Meter indexDeleteMeter;
     private Meter solrAddErrorMeter;
@@ -61,7 +61,7 @@ public class DirectSolrInputDocumentWriter implements SolrInputDocumentWriter {
     private Meter documentAddErrorMeter;
     private Meter documentDeleteErrorMeter;
 
-    public DirectSolrInputDocumentWriter(String indexName, SolrServer solrServer) {
+    public DirectSolrInputDocumentWriter(String indexName, SolrClient solrServer) {
         this.solrServer = solrServer;
         
         indexAddMeter = Metrics.newMeter(metricName(getClass(), "Index adds", indexName), "Documents added to Solr index",
@@ -168,7 +168,7 @@ public class DirectSolrInputDocumentWriter implements SolrInputDocumentWriter {
     }
     
     /**
-     * Has the same behavior as {@link SolrServer#deleteByQuery(String)}.
+     * Has the same behavior as {@link SolrClient#deleteByQuery(String)}.
      * 
      * @param deleteQuery delete query to be executed
      */

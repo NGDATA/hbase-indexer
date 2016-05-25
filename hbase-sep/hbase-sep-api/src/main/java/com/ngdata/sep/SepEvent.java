@@ -15,13 +15,15 @@
  */
 package com.ngdata.sep;
 
-import java.util.List;
-
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.KeyValue;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Contains information about a single atomic mutation that has occurred on a row in HBase.
@@ -35,7 +37,7 @@ public class SepEvent {
 
     /**
      * Single constructor.
-     * 
+     *
      * @param table The HBase table on which the event was triggered
      * @param row The row in the table where the event was triggered
      * @param keyValues The list of updates to the HBase row
@@ -46,6 +48,22 @@ public class SepEvent {
         this.row = row;
         this.payload = payload;
         this.keyValues = keyValues;
+    }
+
+    /**
+     * Single constructor.
+     *
+     * @param table   The HBase table on which the event was triggered
+     * @param row     The row in the table where the event was triggered
+     * @param cells   The list of updates to the HBase row
+     * @param payload Optional additional payload containing data about the data mutation(s)
+     */
+    public static SepEvent create(byte[] table, byte[] row, List<Cell> cells, byte[] payload) {
+        List<KeyValue> keyValues = new ArrayList<KeyValue>(cells.size());
+        for (Cell cell : cells) {
+            keyValues.add((KeyValue)cell);
+        }
+        return new SepEvent(table, row, keyValues, payload);
     }
 
     /**

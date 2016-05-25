@@ -18,6 +18,7 @@ package com.ngdata.hbaseindexer.util.solr;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -25,6 +26,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -33,12 +35,16 @@ import org.apache.zookeeper.ZooKeeper;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
  * Loads a SolrConfig (and other configuration elements) from a SolrCloud ZooKeeper.
  */
 public class SolrConfigLoader extends SolrResourceLoader {
+
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     private ZooKeeper zk;
     private String configZkPath;
@@ -58,7 +64,7 @@ public class SolrConfigLoader extends SolrResourceLoader {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonParser jsonParser = objectMapper.getJsonFactory().createJsonParser(data);
             JsonNode collectionNode = objectMapper.readTree(jsonParser);
-            return ZkController.CONFIGS_ZKNODE + "/" + collectionNode.get(ZkController.CONFIGNAME_PROP).getValueAsText();
+            return ZkConfigManager.CONFIGS_ZKNODE + "/" + collectionNode.get(ZkController.CONFIGNAME_PROP).getValueAsText();
         } catch (Exception e) {
             // TODO Better exception handling here
             throw new RuntimeException(e);

@@ -15,21 +15,6 @@
  */
 package com.ngdata.hbaseindexer.morphline;
 
-import static com.ngdata.sep.impl.HBaseShims.newResult;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableSet;
-
-import org.kitesdk.morphline.api.Record;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
@@ -37,6 +22,7 @@ import com.google.common.collect.Multimap;
 import com.ngdata.hbaseindexer.conf.FieldDefinition;
 import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
 import com.ngdata.hbaseindexer.parse.SolrUpdateWriter;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
@@ -45,7 +31,21 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.junit.Before;
 import org.junit.Test;
+import org.kitesdk.morphline.api.Record;
 import org.mockito.ArgumentCaptor;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableSet;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 public class MorphlineResultToSolrMapperTest {
 
@@ -74,7 +74,7 @@ public class MorphlineResultToSolrMapperTest {
 
         KeyValue kvA = new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes(42));
         KeyValue kvB = new KeyValue(ROW, COLUMN_FAMILY_B, QUALIFIER_B, "dummy value".getBytes("UTF-8"));
-        Result result = newResult(Lists.newArrayList(kvA, kvB));
+        Result result = Result.create(Lists.<Cell>newArrayList(kvA, kvB));
 
         Multimap expectedMap = ImmutableMultimap.of("fieldA", 42, "fieldB", "dummy value");
 
@@ -198,8 +198,8 @@ public class MorphlineResultToSolrMapperTest {
         FieldDefinition fieldDef = new FieldDefinition("fieldname", "cfA:qualifierA", ValueSource.VALUE, "int");
   
         MorphlineResultToSolrMapper resultMapper = createMorphlineMapper(fieldDef);
-  
-        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+
+        Result result = Result.create(Lists.<Cell>newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertTrue(resultMapper.containsRequiredData(result));
     }
@@ -210,8 +210,8 @@ public class MorphlineResultToSolrMapperTest {
         FieldDefinition fieldDef = new FieldDefinition("fieldname", "cfA:quali*", ValueSource.VALUE, "int");
         
         MorphlineResultToSolrMapper resultMapper = createMorphlineMapper(fieldDef);
-        
-        Result result = newResult(Lists.newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
+
+        Result result = Result.create(Lists.<Cell>newArrayList(new KeyValue(ROW, COLUMN_FAMILY_A, QUALIFIER_A, Bytes.toBytes("value"))));
         
         assertFalse(resultMapper.containsRequiredData(result));
     }

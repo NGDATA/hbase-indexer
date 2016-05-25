@@ -15,16 +15,17 @@
  */
 package com.ngdata.hbaseindexer.parse.extract;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.NavigableMap;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.ngdata.hbaseindexer.parse.ByteArrayExtractor;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.NavigableMap;
 
 /**
  * Abstract base class for prefix-matching {@link ByteArrayExtractor}s.
@@ -71,7 +72,7 @@ public abstract class AbstractPrefixMatchingExtractor implements ByteArrayExtrac
     
     @Override
     public boolean isApplicable(KeyValue keyValue) {
-        return keyValue.matchingFamily(columnFamily) && Bytes.startsWith(keyValue.getQualifier(), prefix);
+        return CellUtil.matchingFamily(keyValue, columnFamily) && Bytes.startsWith(keyValue.getQualifier(), prefix);
     }
 
     @Override
