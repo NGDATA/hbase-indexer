@@ -24,19 +24,13 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.nio.ByteBuffer;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
 
-import org.kitesdk.morphline.api.Record;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.ngdata.hbaseindexer.conf.FieldDefinition;
-import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
-import com.ngdata.hbaseindexer.parse.SolrUpdateWriter;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Result;
@@ -45,7 +39,16 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.junit.Before;
 import org.junit.Test;
+import org.kitesdk.morphline.api.Record;
 import org.mockito.ArgumentCaptor;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
+import com.ngdata.hbaseindexer.conf.FieldDefinition;
+import com.ngdata.hbaseindexer.conf.FieldDefinition.ValueSource;
+import com.ngdata.hbaseindexer.parse.SolrUpdateWriter;
 
 public class MorphlineResultToSolrMapperTest {
 
@@ -85,6 +88,29 @@ public class MorphlineResultToSolrMapperTest {
         assertEquals(expectedMap, toRecord(solrDocument).getFields());
     }
 
+
+    @Test
+    public void testMapRowkey() throws Exception {
+        MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();
+        resultMapper.configure(ImmutableMap.of(
+                MorphlineResultToSolrMapper.MORPHLINE_FILE_PARAM, "src/test/resources/test-morphlines/extractHBaseCellsRowkey.conf")
+                );
+        Date d = new Date();
+        ByteBuffer row = ByteBuffer.allocate(Bytes.SIZEOF_LONG);
+        row.putLong(d.getTime());
+        byte[] rowkeyBytes = row.array();
+        KeyValue kvA = new KeyValue(rowkeyBytes, System.currentTimeMillis());
+        Result result = newResult(Lists.newArrayList(kvA));
+        Multimap expectedMap = ImmutableMultimap.of("fieldR", d.getTime());
+        
+        resultMapper.map(result, updateWriter);
+        verify(updateWriter).add(solrInputDocCaptor.capture());
+        
+        SolrInputDocument solrDocument = solrInputDocCaptor.getValue();
+        assertEquals(expectedMap, toRecord(solrDocument).getFields());
+    }
+
+    
     @Test
     public void testMapWithMultipleOutputFields() throws Exception {
         MorphlineResultToSolrMapper resultMapper = new MorphlineResultToSolrMapper();

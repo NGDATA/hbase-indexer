@@ -24,7 +24,6 @@ import java.util.NavigableMap;
 
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
-
 import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.CommandBuilder;
 import org.kitesdk.morphline.api.MorphlineCompilationException;
@@ -34,12 +33,14 @@ import org.kitesdk.morphline.base.AbstractCommand;
 import org.kitesdk.morphline.base.Configs;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Validator;
+
 import com.google.common.base.Preconditions;
 import com.ngdata.hbaseindexer.parse.ByteArrayExtractor;
 import com.ngdata.hbaseindexer.parse.ByteArrayValueMapper;
 import com.ngdata.hbaseindexer.parse.ByteArrayValueMappers;
 import com.ngdata.hbaseindexer.parse.extract.PrefixMatchingCellExtractor;
 import com.ngdata.hbaseindexer.parse.extract.PrefixMatchingQualifierExtractor;
+import com.ngdata.hbaseindexer.parse.extract.RowkeyExtractor;
 import com.ngdata.hbaseindexer.parse.extract.SingleCellExtractor;
 import com.typesafe.config.Config;
 
@@ -64,12 +65,22 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
     // /////////////////////////////////////////////////////////////////////////////
     private static final class ExtractHBaseCells extends AbstractCommand {
 
-        private final List<Mapping> mappings = new ArrayList();
+        private final List<AbstractMapping> mappings = new ArrayList();
 
         public ExtractHBaseCells(CommandBuilder builder, Config config, Command parent, Command child, MorphlineContext context) {
             super(builder, config, parent, child, context);
-            for (Config mapping : getConfigs().getConfigList(config, "mappings")) {
-                mappings.add(new Mapping(mapping, context));
+            for (Config mappingConfig : getConfigs().getConfigList(config, "mappings")) {
+                Configs configs = new Configs();
+                LowerCaseValueSource source = new Validator<LowerCaseValueSource>().validateEnum(config,
+                        configs.getString(mappingConfig, "source", LowerCaseValueSource.value.toString()),
+                        LowerCaseValueSource.class);
+                if (source == LowerCaseValueSource.value) {
+                    mappings.add(new ValueMapping(mappingConfig, configs, context));
+                } else if (source == LowerCaseValueSource.qualifier) {
+                    mappings.add(new QualifierMapping(mappingConfig, configs, context));
+                } else {
+                    mappings.add(new RowkeyMapping(mappingConfig, configs, context));
+                }
             }
             validateArguments();
         }
@@ -79,7 +90,7 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
             Result result = (Result)record.getFirstValue(Fields.ATTACHMENT_BODY);
             Preconditions.checkNotNull(result);
             removeAttachments(record);
-            for (Mapping mapping : mappings) {
+            for (AbstractMapping mapping : mappings) {
                 mapping.apply(result, record);
             }
             // pass record to next command in chain:      
@@ -98,96 +109,97 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
     // /////////////////////////////////////////////////////////////////////////////
     // Nested classes:
     // /////////////////////////////////////////////////////////////////////////////
-    private static final class Mapping {
+    private abstract static class AbstractMapping {
 
-        private final String inputColumn;
-        private final byte[] columnFamily;
-        private final byte[] qualifier;
-        private final boolean isWildCard;
-        private final String outputFieldName;
-        private final List<String> outputFieldNames;
-        private final boolean isDynamicOutputFieldName;
-        private final ByteArrayExtractor extractor;
-        private final String type;
-        private final ByteArrayValueMapper byteArrayMapper;
-
-        // also see ByteArrayExtractors
-        public Mapping(Config config, MorphlineContext context) {
-            Configs configs = new Configs();
-            this.inputColumn = resolveColumnName(configs.getString(config, "inputColumn"));
-            this.columnFamily = Bytes.toBytes(splitFamilyAndQualifier(inputColumn)[0]);
-            
-            String qualifierString = splitFamilyAndQualifier(inputColumn)[1];
-            this.isWildCard = qualifierString.endsWith("*");
-            if (isWildCard) {
-                qualifierString = qualifierString.substring(0, qualifierString.length() - 1);
-            }
-            this.qualifier = Bytes.toBytes(qualifierString);
-            
-            String outputField = configs.getString(config, "outputField", null);
-            this.outputFieldNames = configs.getStringList(config, "outputFields", null);
-            if (outputField == null && outputFieldNames == null) {
-              throw new MorphlineCompilationException("Either outputField or outputFields must be defined", config);
-            }
-            if (outputField != null && outputFieldNames != null) {
-              throw new MorphlineCompilationException("Must not define both outputField and outputFields at the same time", config);
-            }
-            if (outputField == null) {
-              this.isDynamicOutputFieldName = false;
-              this.outputFieldName = null;
-            } else {
-              this.isDynamicOutputFieldName = outputField.endsWith("*");
-              if (isDynamicOutputFieldName) {
-                  this.outputFieldName = outputField.substring(0, outputField.length() - 1);
-              } else {
-                  this.outputFieldName = outputField;
-              }
-            }
+        protected final String outputField;
+        protected final String type;
+        protected final ByteArrayValueMapper byteArrayMapper;
+        
+        protected ByteArrayExtractor extractor; // must be set in inheritor
+        
+        public AbstractMapping(Config config, Configs configs) {
+            this.outputField = configs.getString(config, "outputField", null);
             
             this.type = configs.getString(config, "type", "byte[]");
             if (type.equals("byte[]")) { // pass through byte[] to downstream morphline commands without conversion
                 this.byteArrayMapper = new ByteArrayValueMapper() {
                     @Override
-                    public Collection map(byte[] input) {
+                    public Collection<byte[]> map(byte[] input) {
                         return Collections.singletonList(input);
                     }
                 };
             } else {
                 this.byteArrayMapper = ByteArrayValueMappers.getMapper(type);
             }
-
-            LowerCaseValueSource source = new Validator<LowerCaseValueSource>().validateEnum(config,
-                    configs.getString(config, "source", LowerCaseValueSource.value.toString()),
-                    LowerCaseValueSource.class);
-
-            if (source == LowerCaseValueSource.value) {
-                if (isWildCard) {
-                    this.extractor = new PrefixMatchingCellExtractor(columnFamily, qualifier);
-                } else {
-                    this.extractor = new SingleCellExtractor(columnFamily, qualifier);
-                }
-            } else {
-                if (isWildCard) {
-                    this.extractor = new PrefixMatchingQualifierExtractor(columnFamily, qualifier);
-                } else {
-                    throw new IllegalArgumentException("Can't create a non-prefix-based qualifier extractor");
-                }
-            }
-            
+        }
+        
+        protected void afterInit(Config config, Configs configs, MorphlineContext context) {
             configs.validateArguments(config);
+            if (this.extractor == null) {
+                throw new IllegalStateException("Extractor has not been initialized");
+            }
             if (context instanceof HBaseMorphlineContext) {
                 ((HBaseMorphlineContext)context).getExtractors().add(this.extractor);
             }
         }
-
-        /**
-         * Override for custom name resolution, if desired. For example you could override this to translate human
-         * readable names to Kiji-encoded names.
-         */
-        protected String resolveColumnName(String inputColumn) {
-            return inputColumn;
+        
+        protected void extractWithSingleOutputField(Result result, Record record) {
+            Iterator<byte[]> iter = extractor.extract(result).iterator();
+            while (iter.hasNext()) {
+                for (Object value : byteArrayMapper.map(iter.next())) {
+                    record.put(outputField, value);
+                }
+            }
         }
+        
+        public abstract void apply(Result result, Record record);
+    }
 
+    private abstract static class AbstractColumnMapping extends AbstractMapping {
+
+        protected final String inputColumn;
+        protected final byte[] columnFamily;
+        protected final byte[] qualifier;
+        protected final boolean isWildCard;
+        protected final String outputFieldName;
+        protected final List<String> outputFieldNames;
+        protected final boolean isDynamicOutputFieldName;
+
+        public AbstractColumnMapping(Config config, Configs configs) {
+            super(config, configs);
+
+            this.inputColumn = resolveColumnName(configs.getString(config, "inputColumn"));
+            this.columnFamily = Bytes.toBytes(splitFamilyAndQualifier(inputColumn)[0]);
+
+            String qualifierString = splitFamilyAndQualifier(inputColumn)[1];
+            this.isWildCard = qualifierString.endsWith("*");
+            if (isWildCard) {
+                qualifierString = qualifierString.substring(0, qualifierString.length() - 1);
+            }
+            this.qualifier = Bytes.toBytes(qualifierString);
+
+            this.outputFieldNames = configs.getStringList(config, "outputFields", null);
+            if (outputField == null && outputFieldNames == null) {
+                throw new MorphlineCompilationException("Either outputField or outputFields must be defined", config);
+            }
+            if (outputField != null && outputFieldNames != null) {
+                throw new MorphlineCompilationException(
+                        "Must not define both outputField and outputFields at the same time", config);
+            }
+            if (outputField == null) {
+                this.isDynamicOutputFieldName = false;
+                this.outputFieldName = null;
+            } else {
+                this.isDynamicOutputFieldName = outputField.endsWith("*");
+                if (isDynamicOutputFieldName) {
+                    this.outputFieldName = outputField.substring(0, outputField.length() - 1);
+                } else {
+                    this.outputFieldName = outputField;
+                }
+            }
+        }
+        
+        @Override
         public void apply(Result result, Record record) {
             if (outputFieldNames != null) {
                 extractWithMultipleOutputFieldNames(result, record);
@@ -197,8 +209,9 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
                 extractWithSingleOutputField(result, record);
             }
         }
-
-        private void extractWithSingleOutputField(Result result, Record record) {
+        
+        @Override
+        protected void extractWithSingleOutputField(Result result, Record record) {
             Iterator<byte[]> iter = extractor.extract(result).iterator();
             while (iter.hasNext()) {
                 for (Object value : byteArrayMapper.map(iter.next())) {
@@ -206,7 +219,14 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
                 }
             }
         }
-      
+        /**
+         * Override for custom name resolution, if desired. For example you could override this to translate human
+         * readable names to Kiji-encoded names.
+         */
+        protected String resolveColumnName(String inputColumn) {
+            return inputColumn;
+        }
+        
         private void extractWithMultipleOutputFieldNames(Result result, Record record) {
             Iterator<byte[]> iter = extractor.extract(result).iterator();
             for (int i = 0; i < outputFieldNames.size() && iter.hasNext(); i++) {
@@ -217,7 +237,7 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
                         record.put(outputField, value);
                     }
                 }
-            }              
+            }
         }
         
         private void extractWithDynamicOutputFieldNames(Result result, Record record) {
@@ -238,7 +258,7 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
               assert !iter.hasNext();
           }
         }
-      
+        
         private static String[] splitFamilyAndQualifier(String fieldValueExpression) {
             String[] splits = fieldValueExpression.split(":", 2);
             if (splits.length != 2) {
@@ -247,6 +267,45 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
             return splits;
         }
     }
+
+    private static class QualifierMapping extends AbstractColumnMapping {
+
+        public QualifierMapping(Config config, Configs configs, MorphlineContext context) {
+            super(config, configs);
+            if (isWildCard) {
+                this.extractor = new PrefixMatchingQualifierExtractor(columnFamily, qualifier);
+            } else {
+                throw new IllegalArgumentException("Can't create a non-prefix-based qualifier extractor");
+            }
+            afterInit(config, configs, context);
+        }
+    }
+
+    private static class ValueMapping extends AbstractColumnMapping {
+        public ValueMapping(Config config, Configs configs, MorphlineContext context) {
+            super(config, configs);
+            if (isWildCard) {
+                this.extractor = new PrefixMatchingCellExtractor(columnFamily, qualifier);
+            } else {
+                this.extractor = new SingleCellExtractor(columnFamily, qualifier);
+            }
+            afterInit(config, configs, context);
+        }
+    }
+
+    private static class RowkeyMapping extends AbstractMapping {
+
+        public RowkeyMapping(Config config, Configs configs, MorphlineContext context) {
+            super(config, configs);
+            this.extractor = new RowkeyExtractor();
+            afterInit(config, configs, context);
+        }
+
+        public void apply(Result result, Record record) {
+            extractWithSingleOutputField(result, record);
+        }
+    }
+
 
     // /////////////////////////////////////////////////////////////////////////////
     // Nested classes:
@@ -263,6 +322,11 @@ public final class ExtractHBaseCellsBuilder implements CommandBuilder {
         /**
          * Extract values to index from the cell value of a {@code KeyValue}.
          */
-        value // we expect lowercase in config file!
+        value, // we expect lowercase in config file!
+
+        /**
+         * Extract values to index from row-key bytes.
+         */
+        rowkey // we expect lowercase in config file!
     }
 }
