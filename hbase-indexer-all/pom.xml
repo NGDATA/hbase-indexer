@@ -46,6 +46,10 @@
       <groupId>com.ngdata</groupId>
       <artifactId>hbase-sep-tools</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.ngdata</groupId>
+      <artifactId>hbase-indexer-phoenix</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

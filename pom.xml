@@ -39,6 +39,7 @@
     <version.search>1.2.0</version.search>
     <version.search.hbase98>1.0.0-cdh5.0.0</version.search.hbase98>
     <version.jersey>1.17</version.jersey>
+    <version.phoenix>4.2.2</version.phoenix>
 
     <!-- Tells maven plugins what file encoding to use -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -74,13 +75,14 @@
     <module>hbase-indexer-common</module>
     <module>hbase-indexer-model</module>
     <module>hbase-indexer-cli</module>
-    <module>hbase-indexer-all</module>
     <module>hbase-indexer-engine</module>
     <module>hbase-indexer-morphlines</module>
+    <module>hbase-indexer-phoenix</module>
     <module>hbase-indexer-demo</module>
     <module>hbase-sep</module>
     <module>hbase-indexer-mr</module>
     <module>hbase-indexer-dist</module>
+    <module>hbase-indexer-all</module>
   </modules>
 
   <dependencyManagement>
@@ -168,6 +170,11 @@
       <dependency>
         <groupId>com.ngdata</groupId>
         <artifactId>hbase-indexer-all</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.ngdata</groupId>
+        <artifactId>hbase-indexer-phoenix</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -427,6 +434,11 @@
         <groupId>org.kohsuke</groupId>
         <artifactId>akuma</artifactId>
         <version>1.9</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.phoenix</groupId>
+        <artifactId>phoenix-core</artifactId>
+        <version>${version.phoenix}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
