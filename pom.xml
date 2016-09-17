@@ -75,6 +75,7 @@
     <module>hbase-sep</module>
     <module>hbase-indexer-mr</module>
     <module>hbase-indexer-dist</module>
+    <module>hbase-indexer-phoenix</module>
   </modules>
 
   <dependencyManagement>
