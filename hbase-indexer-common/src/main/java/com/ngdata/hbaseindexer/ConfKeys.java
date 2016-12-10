@@ -34,4 +34,6 @@ public class ConfKeys {
     /** Ganglia reporting interval, in seconds. */
     public static final String GANGLIA_INTERVAL = "hbaseindexer.metrics.ganglia.interval";
     
+    /** HTTP header buffer size. */
+    public static final String HTTP_HEADER_BUFFER_SIZE = "hbaseindexer.http.headerBufferSize";
 }

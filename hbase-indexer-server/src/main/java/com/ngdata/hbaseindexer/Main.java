@@ -129,14 +129,16 @@ public class Main {
                 indexerProcessRegistry, tablePool, conf);
 
         indexerSupervisor.init();
-        startHttpServer();
+        startHttpServer(conf);
 
     }
 
-    private void startHttpServer() throws Exception {
+    private void startHttpServer(Configuration conf) throws Exception {
         server = new Server();
         SelectChannelConnector selectChannelConnector = new SelectChannelConnector();
         selectChannelConnector.setPort(11060);
+        selectChannelConnector.setHeaderBufferSize(conf.getInt(ConfKeys.HTTP_HEADER_BUFFER_SIZE, 64 * 1024));
+        
         server.setConnectors(new Connector[]{selectChannelConnector});
 
         PackagesResourceConfig packagesResourceConfig = new PackagesResourceConfig("com/ngdata/hbaseindexer/rest");
