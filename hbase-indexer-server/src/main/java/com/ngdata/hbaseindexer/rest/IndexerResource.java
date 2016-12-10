@@ -154,7 +154,7 @@ public class IndexerResource {
             indexer.indexRowData(rowData);            
         } else {
             throw new WebApplicationException(
-                    Response.status(Response.Status.BAD_REQUEST).entity("Unsupported POST action: " + action).build());
+                    Response.status(Response.Status.BAD_REQUEST).entity("Unsupported POST action").build());
         }
     }
 
