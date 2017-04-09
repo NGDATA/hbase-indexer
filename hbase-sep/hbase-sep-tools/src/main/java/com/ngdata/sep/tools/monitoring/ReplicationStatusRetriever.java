@@ -136,21 +136,35 @@ public class ReplicationStatusRetriever {
 
     private long parseHLogPositionFrom(byte[] data) {
       Method method;
+
       try {
-        // this method is available for hbase-0.96 and above
-        method = ZKUtil.class.getMethod("parseHLogPositionFrom", byte[].class);
+        // this method is available for hbase-1.0 and above
+        method = ZKUtil.class.getMethod("parseWALPositionFrom", byte[].class);
         Preconditions.checkNotNull(method);
       } catch (SecurityException e) {
         method = null;
       } catch (NoSuchMethodException e) {
         method = null;
       }
-      
+
+      if (method == null) {
+        try {
+          // this method is available for hbase-0.96 and hbase-0.98
+          method = ZKUtil.class.getMethod("parseHLogPositionFrom", byte[].class);
+          Preconditions.checkNotNull(method);
+        } catch (SecurityException e) {
+          method = null;
+        } catch (NoSuchMethodException e) {
+          method = null;
+        }
+      }
+
       long position;
       if (method != null) {
         // this is correct for hbase-0.96 and above 
         try {
-          // i.e. position = ZKUtil.parseHLogPositionFrom(data);
+          // i.e. position = ZKUtil.parseWALPositionFrom(data);
+          // or position = ZKUtil.parseHLogPositionFrom(data);
           position = (Long) method.invoke(null, data);
         } catch (IllegalArgumentException e) {
           throw new RuntimeException(e);
