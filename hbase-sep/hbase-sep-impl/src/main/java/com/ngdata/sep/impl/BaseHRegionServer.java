@@ -15,17 +15,17 @@
  */
 package com.ngdata.sep.impl;
 
+import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Server;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos;
+import org.apache.hadoop.hbase.protobuf.generated.RPCProtos;
+import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.zookeeper.ZooKeeperWatcher;
 
-/**
- *
- */
 public class BaseHRegionServer implements AdminProtos.AdminService.BlockingInterface, Server, org.apache.hadoop.hbase.ipc.PriorityFunction {
 
     @Override
@@ -88,19 +88,10 @@ public class BaseHRegionServer implements AdminProtos.AdminService.BlockingInter
         throw new UnsupportedOperationException("Not implemented");
     }
 
-
     @Override
     public AdminProtos.ReplicateWALEntryResponse replay(final RpcController controller, final AdminProtos.ReplicateWALEntryRequest request) throws ServiceException {
         throw new UnsupportedOperationException("Not implemented");
     }
-  /*
-  @Override
-  public org.apache.hadoop.hbase.protobuf.generated.ClientProtos.MultiResponse replay(
-          com.google.protobuf.RpcController controller,
-          org.apache.hadoop.hbase.protobuf.generated.ClientProtos.MultiRequest request) {
-    throw new UnsupportedOperationException("Not implemented");
-  }
-  */
 
     @Override
     public AdminProtos.RollWALWriterResponse rollWALWriter(RpcController rpcController, AdminProtos.RollWALWriterRequest rollWALWriterRequest) throws ServiceException {
@@ -153,8 +144,8 @@ public class BaseHRegionServer implements AdminProtos.AdminService.BlockingInter
     }
 
     @Override
-    public int getPriority(org.apache.hadoop.hbase.protobuf.generated.RPCProtos.RequestHeader header, com.google.protobuf.Message param) {
-        return org.apache.hadoop.hbase.HConstants.NORMAL_QOS;
+    public int getPriority(RPCProtos.RequestHeader requestHeader, Message message, User user) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override
