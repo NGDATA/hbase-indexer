@@ -4,13 +4,13 @@ This project contains some sample code making use of the SEP. It demonstrates a 
 
 ## Setup
 
-For the purpose of this demo, we will run HBase in standalone mode (zookeeper is embbeded,
+For the purpose of this demo, we will run HBase in standalone mode (zookeeper is embedded,
 no hdfs is used). Note that by default, HBase stores its data in /tmp, which will be lost,
 see the HBase docs on how to change this.
 
 ### Download HBase
 
-Download HBase (0.94) from [http://hbase.apache.org/](http://hbase.apache.org/).
+Download HBase (1.2.8) from [http://hbase.apache.org/](http://hbase.apache.org/).
 
 ### Configure HBase
 

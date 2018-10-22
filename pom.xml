@@ -16,21 +16,22 @@
  * limitations under the License.
  */
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <properties>
     <version.solr>6.3.0</version.solr>
     <version.guava>11.0.2</version.guava>
     <version.joda-time>1.6</version.joda-time>
     <version.slf4j>1.7.5</version.slf4j>
-    <version.hbase>1.1.0</version.hbase>
+    <version.hbase>1.2.8</version.hbase>
     <version.hadoop>2.7.1</version.hadoop>
     <version.zookeeper>3.4.5</version.zookeeper>
     <version.jackson>1.9.13</version.jackson>
     <version.httpclient>4.3</version.httpclient>
     <version.kite>0.13.0</version.kite>
     <version.jersey>1.17</version.jersey>
-    
+
     <version.surefire.plugin>2.19.1</version.surefire.plugin>
     <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
 
@@ -364,13 +365,6 @@
         <groupId>org.apache.hbase</groupId>
         <artifactId>hbase</artifactId>
         <version>${version.hbase}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>stax</groupId>
-            <artifactId>stax-api</artifactId>
-            <!-- only necessary for Java < 6 -->
-          </exclusion>
-        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.hbase</groupId>
@@ -593,7 +587,6 @@
     </pluginRepository>
   </pluginRepositories>
 
-
   <distributionManagement>
     <repository>
       <id>ngdata.oss-releases</id>
@@ -641,8 +634,6 @@
               <exclude>**/conf/*</exclude>
               <exclude>**/src/it/resources/**</exclude>
               <exclude>**/META-INF/services/**</exclude>
-              <exclude>**/ForkedAlphaNumericComparator.java</exclude>
-              <!-- MIT -->
             </excludes>
           </configuration>
           <executions>
