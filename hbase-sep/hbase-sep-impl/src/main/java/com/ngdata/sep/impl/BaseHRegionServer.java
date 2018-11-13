@@ -153,7 +153,7 @@ public class BaseHRegionServer implements AdminProtos.AdminService.BlockingInter
     }
 
     @Override
-    public int getPriority(org.apache.hadoop.hbase.protobuf.generated.RPCProtos.RequestHeader header, com.google.protobuf.Message param) {
+    public int getPriority(org.apache.hadoop.hbase.protobuf.generated.RPCProtos.RequestHeader header, com.google.protobuf.Message param, org.apache.hadoop.hbase.security.User user) {
         return org.apache.hadoop.hbase.HConstants.NORMAL_QOS;
     }
 
@@ -189,5 +189,4 @@ public class BaseHRegionServer implements AdminProtos.AdminService.BlockingInter
             throws com.google.protobuf.ServiceException {
         throw new UnsupportedOperationException("Not implemented");
     }
-
 }

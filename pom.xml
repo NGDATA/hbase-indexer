@@ -23,12 +23,12 @@
     <version.guava>11.0.2</version.guava>
     <version.joda-time>1.6</version.joda-time>
     <version.slf4j>1.7.5</version.slf4j>
-    <version.hbase>1.1.0</version.hbase>
+    <version.hbase>1.4.8</version.hbase>
     <version.hadoop>2.7.1</version.hadoop>
     <version.zookeeper>3.4.5</version.zookeeper>
     <version.jackson>1.9.13</version.jackson>
     <version.httpclient>4.3</version.httpclient>
-    <version.kite>0.13.0</version.kite>
+    <version.kite>0.18.0</version.kite>
     <version.jersey>1.17</version.jersey>
     
     <version.surefire.plugin>2.19.1</version.surefire.plugin>
