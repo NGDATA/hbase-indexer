@@ -175,6 +175,6 @@ public class SepConsumerTest {
     }
     
     private void replicateWALEntry(WAL.Entry[] entries) throws IOException {
-        ReplicationProtbufUtil.replicateWALEntry(sepConsumer, entries);
+        ReplicationProtbufUtil.replicateWALEntry(sepConsumer, entries, null, null, null);
     }
 }

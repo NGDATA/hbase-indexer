@@ -40,7 +40,7 @@ import org.apache.hadoop.hbase.KeyValueUtil;
 import org.apache.hadoop.hbase.ServerName;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.ipc.FifoRpcScheduler;
-import org.apache.hadoop.hbase.ipc.PayloadCarryingRpcController;
+import org.apache.hadoop.hbase.ipc.HBaseRpcController;
 import org.apache.hadoop.hbase.ipc.RpcServer;
 import org.apache.hadoop.hbase.protobuf.generated.AdminProtos;
 import org.apache.hadoop.hbase.security.User;
@@ -221,7 +221,7 @@ public class SepConsumer extends BaseHRegionServer {
             SepEventExecutor eventExecutor = new SepEventExecutor(listener, executors, 100, sepMetrics);
 
             List<AdminProtos.WALEntry> entries = request.getEntryList();
-            CellScanner cells = ((PayloadCarryingRpcController)controller).cellScanner();
+            CellScanner cells = ((HBaseRpcController)controller).cellScanner();
 
             for (final AdminProtos.WALEntry entry : entries) {
                 TableName tableName = (entry.getKey().getWriteTime() < subscriptionTimestamp) ? null :
